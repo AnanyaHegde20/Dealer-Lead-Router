@@ -146,6 +146,7 @@ export async function submitLeadForm(
     source: values.source as LeadSource,
     created_on: new Date().toISOString().slice(0, 10),
     status: 'New' satisfies LeadStatus,
+    origin: 'session',
   };
 
   await repository.create(lead);

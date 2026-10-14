@@ -16,6 +16,13 @@ export type LeadStatus = 'New' | 'Contacted' | 'Converted' | 'Lost';
 /** Source vocabulary produced by the Phase 1 cleaning script. */
 export type LeadSource = 'Website' | 'Voice Agent' | 'Dealer Walk-in' | 'WhatsApp';
 
+/**
+ * Where a lead record came from:
+ *   'migrated' — one of the 31 cleaned legacy rows from data-out/cleaned_leads.csv
+ *   'session'  — submitted in this browser tab (temporary memory only)
+ */
+export type LeadOrigin = 'migrated' | 'session';
+
 /** Exact columns of data/legacy_leads.csv, before cleaning. */
 export interface LegacyLeadRow {
   lead_id: string;
@@ -46,6 +53,8 @@ export interface Lead {
   /** ISO date, YYYY-MM-DD. */
   created_on: string;
   status: LeadStatus;
+  /** Optional provenance marker; set by the loader/submit path (not a CSV column). */
+  origin?: LeadOrigin;
 }
 
 /** Raw row of data/dealers.csv — pincode_prefixes is pipe-separated ("530|531"). */

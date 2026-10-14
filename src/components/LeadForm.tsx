@@ -9,7 +9,7 @@ import {
   type LeadFormErrors,
   type LeadFormValues,
 } from '../lib/leadForm';
-import { getLeadRepository } from '../lib/leadRepository';
+import { getLeadStore } from '../lib/leadData';
 import type { Lead } from '../lib/types';
 import { validateMobile } from '../lib/validate';
 import { PlusIcon } from './icons';
@@ -125,7 +125,7 @@ export function LeadForm({ onSaved }: LeadFormProps) {
     setSubmitAttempted(true);
     setSaving(true);
     try {
-      const result = await submitLeadForm(values, getLeadRepository());
+      const result = await submitLeadForm(values, getLeadStore());
       if (!result.ok) {
         setRemoteErrors(result.errors);
         setSavedLead(null);
