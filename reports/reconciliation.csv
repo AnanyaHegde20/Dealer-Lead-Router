@@ -1,0 +1,41 @@
+lead_id,action,reason
+L1001,imported,assigned to D02 Kandi Energy Point (prefix 502)
+L1002,imported,assigned to D06 Krishna Energy Store (prefix 521)
+L1003,imported,assigned to D05 Vizag Home Power (prefix 530)
+L1004,fixed,phone '98480 22 431' normalized to '9848022431'; assigned to D02 Kandi Energy Point (prefix 502)
+L1005,imported,assigned to D06 Krishna Energy Store (prefix 521)
+L1006,fixed,phone '+91-9000012345' normalized to '9000012345'; assigned to D02 Kandi Energy Point (prefix 502)
+L1007,imported,assigned to D01 Sri Sai Power Solutions (prefix 500)
+L1008,imported,assigned to D06 Krishna Energy Store (prefix 521)
+L1009,rejected,"phone '12345' has 5 digits, need exactly 10"
+L1010,imported,assigned to D07 Guntur Battery World (prefix 522)
+L1011,imported,assigned to D06 Krishna Energy Store (prefix 521)
+L1012,rejected,"pincode '5000' has 4 digits, need exactly 6"
+L1013,imported,assigned to D05 Vizag Home Power (prefix 531)
+L1014,imported,assigned to D06 Krishna Energy Store (prefix 520)
+L1015,assigned_inhouse,no dealer matches pincode prefix 110; routed to In-house Sales
+L1016,imported,assigned to D06 Krishna Energy Store (prefix 520)
+L1017,imported,assigned to D05 Vizag Home Power (prefix 531)
+L1018,rejected,date '31/09/2026' is impossible (no such day/month)
+L1019,imported,assigned to D06 Krishna Energy Store (prefix 521)
+L1020,fixed,status 'converted ' normalized to 'Converted'; assigned to D04 Karimnagar Solar Hub (prefix 505)
+L1021,imported,assigned to D01 Sri Sai Power Solutions (prefix 500)
+L1022,imported,assigned to D08 Tirupati PowerHouse (prefix 517)
+L1023,fixed,product 'Pure power 5 kwh' normalized to 'PuREPower Home 5kWh'; assigned to D02 Kandi Energy Point (prefix 502)
+L1024,imported,assigned to D02 Kandi Energy Point (prefix 502)
+L1025,imported,assigned to D07 Guntur Battery World (prefix 522)
+L1026,rejected,"missing name (input row 26, lead L1026)"
+L1027,imported,assigned to D06 Krishna Energy Store (prefix 521)
+L1028,fixed,source 'website' normalized to 'Website'; assigned to D05 Vizag Home Power (prefix 530)
+L1029,imported,assigned to D08 Tirupati PowerHouse (prefix 517)
+L1030,imported,assigned to D05 Vizag Home Power (prefix 530)
+L1031,imported,assigned to D02 Kandi Energy Point (prefix 502)
+L1032,imported,assigned to D04 Karimnagar Solar Hub (prefix 505)
+L1033,imported,assigned to D02 Kandi Energy Point (prefix 502)
+L1034,imported,assigned to D02 Kandi Energy Point (prefix 502)
+L1035,imported,assigned to D06 Krishna Energy Store (prefix 521)
+L1036,merged,duplicate mobile 9565623510 already used by lead L1003 (input row 3); merged into L1003
+L1037,merged,duplicate mobile 9633021001 already used by lead L1010 (input row 10); merged into L1010; phone '+91 9633021001' normalized to '9633021001'
+L1038,merged,duplicate mobile 9166838090 already used by lead L1031 (input row 31); merged into L1031
+L1039,merged,duplicate mobile 9680557051 already used by lead L1007 (input row 7); merged into L1007
+L1033,merged,"duplicate mobile 9663925448 already used by lead L1013 (input row 13); merged into L1013; lead_id 'L1033' also used by input row 33; different record, not overwritten"

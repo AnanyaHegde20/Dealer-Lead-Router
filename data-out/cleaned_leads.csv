@@ -1,0 +1,32 @@
+lead_id,name,phone,pincode,dealer_id,dealer_name,city,product,source,created_on,status
+L1001,Ravi Kumar,9447712782,502285,D02,Kandi Energy Point,Sangareddy,PuREPower Home 5kWh,Website,2026-09-03,New
+L1002,Lakshmi Devi,9492655486,521137,D06,Krishna Energy Store,Vijayawada,PuREPower Home 3kWh,Voice Agent,2026-09-02,New
+L1003,Suresh Reddy,9565623510,530016,D05,Vizag Home Power,Visakhapatnam,PuREPower Home 3kWh,Voice Agent,2026-09-03,Lost
+L1004,Anitha Rao,9848022431,502319,D02,Kandi Energy Point,Sangareddy,PuREPower Commercial 10kWh,Website,2026-09-08,New
+L1005,Mahesh Goud,9719659571,521137,D06,Krishna Energy Store,Vijayawada,PuREPower Home 5kWh,Website,2026-09-08,New
+L1006,Swathi K,9000012345,502319,D02,Kandi Energy Point,Sangareddy,PuREPower Home 3kWh,Dealer Walk-in,2026-09-14,Contacted
+L1007,Prakash N,9680557051,500081,D01,Sri Sai Power Solutions,Hyderabad,PuREPower Commercial 10kWh,Dealer Walk-in,2026-09-18,Contacted
+L1008,Kavitha M,9210655224,521137,D06,Krishna Energy Store,Vijayawada,PuREPower Commercial 10kWh,Voice Agent,2026-09-12,New
+L1010,Sridevi P,9633021001,522002,D07,Guntur Battery World,Guntur,PuREPower Commercial 10kWh,WhatsApp,2026-09-25,Converted
+L1011,Naresh Yadav,9599936196,521137,D06,Krishna Energy Store,Vijayawada,PuREPower Home 5kWh,Dealer Walk-in,2026-09-10,Contacted
+L1013,Kiran Kumar,9663925448,531001,D05,Vizag Home Power,Visakhapatnam,PuREPower Home 5kWh,WhatsApp,2026-09-10,New
+L1014,Bhavani T,9226772164,520010,D06,Krishna Energy Store,Vijayawada,PuREPower Home 5kWh,Voice Agent,2026-09-25,Converted
+L1015,Rajesh Varma,9263192149,110001,,In-house Sales,,PuREPower Home 5kWh,Website,2026-09-22,New
+L1016,Sunitha G,9920951719,520010,D06,Krishna Energy Store,Vijayawada,PuREPower Commercial 10kWh,Dealer Walk-in,2026-09-11,Converted
+L1017,Harish Chandra,9738199795,531001,D05,Vizag Home Power,Visakhapatnam,PuREPower Commercial 10kWh,WhatsApp,2026-09-03,New
+L1019,Srinivas Rao,9794849312,521137,D06,Krishna Energy Store,Vijayawada,PuREPower Commercial 10kWh,WhatsApp,2026-09-10,Lost
+L1020,Jyothi R,9817960391,505001,D04,Karimnagar Solar Hub,Karimnagar,PuREPower Home 3kWh,WhatsApp,2026-09-12,Converted
+L1021,Ramesh Babu,9755969870,500081,D01,Sri Sai Power Solutions,Hyderabad,PuREPower Home 5kWh,Website,2026-09-07,Converted
+L1022,Divya Sree,9238878003,517501,D08,Tirupati PowerHouse,Tirupati,PuREPower Home 3kWh,WhatsApp,2026-09-13,Lost
+L1023,Anil Kumar,9186523513,502285,D02,Kandi Energy Point,Sangareddy,PuREPower Home 5kWh,WhatsApp,2026-09-18,Converted
+L1024,Saritha V,9247023327,502319,D02,Kandi Energy Point,Sangareddy,PuREPower Home 5kWh,Dealer Walk-in,2026-09-23,Lost
+L1025,Gopal Krishna,9485227600,522002,D07,Guntur Battery World,Guntur,PuREPower Home 5kWh,Voice Agent,2026-09-05,New
+L1027,Vamsi Krishna,9992379915,521137,D06,Krishna Energy Store,Vijayawada,PuREPower Home 3kWh,Dealer Walk-in,2026-09-10,New
+L1028,Hema Latha,9256418835,530016,D05,Vizag Home Power,Visakhapatnam,PuREPower Commercial 10kWh,Website,2026-09-20,Converted
+L1029,Chandra Sekhar,9234745481,517501,D08,Tirupati PowerHouse,Tirupati,PuREPower Commercial 10kWh,Website,2026-09-15,Lost
+L1030,Rekha N,9527424008,530016,D05,Vizag Home Power,Visakhapatnam,PuREPower Home 5kWh,Website,2026-09-16,Lost
+L1031,Satish P,9166838090,502032,D02,Kandi Energy Point,Sangareddy,PuREPower Home 3kWh,Voice Agent,2026-09-15,Contacted
+L1032,Pavani D,9218034622,505001,D04,Karimnagar Solar Hub,Karimnagar,PuREPower Commercial 10kWh,Website,2026-09-04,New
+L1033,Mohan Rao,9708579269,502285,D02,Kandi Energy Point,Sangareddy,PuREPower Commercial 10kWh,Website,2026-09-12,New
+L1034,Lavanya K,9175500775,502319,D02,Kandi Energy Point,Sangareddy,PuREPower Home 3kWh,WhatsApp,2026-09-05,Converted
+L1035,Shankar G,9473006684,521137,D06,Krishna Energy Store,Vijayawada,PuREPower Home 5kWh,WhatsApp,2026-09-04,New
