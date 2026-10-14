@@ -28,6 +28,9 @@ export function normalizeMobile(raw: string): string {
 /** Validate and normalize a mobile number. Returns the 10-digit value or an error. */
 export function validateMobile(raw: string): ValidationResult<string> {
   const value = normalizeMobile(raw ?? '');
+  if (!value) {
+    return { ok: false, error: 'Mobile number is required' };
+  }
   if (!/^\d+$/.test(value)) {
     return { ok: false, error: 'Mobile number must contain digits only' };
   }
@@ -51,6 +54,9 @@ export function isValidMobile(raw: string): boolean {
 /** Validate a pincode: exactly 6 digits, first digit 1-9. */
 export function validatePincode(raw: string): ValidationResult<string> {
   const value = (raw ?? '').trim();
+  if (!value) {
+    return { ok: false, error: 'Pincode is required' };
+  }
   if (!PINCODE_REGEX.test(value)) {
     return {
       ok: false,
