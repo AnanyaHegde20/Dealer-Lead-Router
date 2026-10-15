@@ -3,7 +3,7 @@
  * data-out/cleaned_leads.csv (31 migrated leads, verified in Phase 1).
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getLeadStore, getMigratedLeads } from './leadData';
+import { getLocalLeadStore, getMigratedLeads } from './leadData';
 import { submitLeadForm, type LeadFormValues } from './leadForm';
 import { resetLeadRepository } from './leadRepository';
 import { computeDashboardStats, percentage } from './leadStats';
@@ -84,7 +84,7 @@ describe('computeDashboardStats — migrated data', () => {
 
 describe('computeDashboardStats — with a session lead', () => {
   it('combines migrated and newly submitted leads', async () => {
-    const store = getLeadStore();
+    const store = getLocalLeadStore();
     expect((await submitLeadForm(sessionLead, store)).ok).toBe(true);
     const leads = await store.list();
 
@@ -104,5 +104,18 @@ describe('computeDashboardStats — with a session lead', () => {
     expect(stats.byStatus).toEqual({ New: 0, Contacted: 0, Converted: 0, Lost: 0 });
     expect(stats.dealerStats.every((dealer) => dealer.share === 0)).toBe(true);
     expect(Number.isNaN(stats.dealerStats[0].share)).toBe(false);
+  });
+
+  it('counts cloud, session and migrated origins separately', () => {
+    const cloudLead = {
+      ...getMigratedLeads()[0],
+      lead_id: 'CLOUD01',
+      origin: 'cloud' as const,
+    };
+    const stats = computeDashboardStats([...getMigratedLeads(), cloudLead]);
+    expect(stats.cloud).toBe(1);
+    expect(stats.migrated).toBe(31);
+    expect(stats.session).toBe(0);
+    expect(stats.total).toBe(32);
   });
 });

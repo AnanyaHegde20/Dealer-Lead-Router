@@ -163,6 +163,7 @@ export function LeadsPage({ leads, ready }: LeadsPageProps) {
                 <option value="all">All records</option>
                 <option value="migrated">Migrated</option>
                 <option value="session">Session</option>
+                <option value="cloud">Cloud</option>
               </select>
             </div>
           </div>
@@ -239,15 +240,23 @@ export function LeadsPage({ leads, ready }: LeadsPageProps) {
                         title={
                           lead.origin === 'session'
                             ? 'Submitted in this tab — temporary memory only'
-                            : 'Migrated from data-out/cleaned_leads.csv'
+                            : lead.origin === 'cloud'
+                              ? 'Stored in Cloud Firestore'
+                              : 'Migrated from data-out/cleaned_leads.csv'
                         }
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
                           lead.origin === 'session'
                             ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20'
-                            : 'bg-slate-100 text-slate-600 ring-slate-500/20'
+                            : lead.origin === 'cloud'
+                              ? 'bg-teal-50 text-teal-700 ring-teal-600/20'
+                              : 'bg-slate-100 text-slate-600 ring-slate-500/20'
                         }`}
                       >
-                        {lead.origin === 'session' ? 'Session' : 'Migrated'}
+                        {lead.origin === 'session'
+                          ? 'Session'
+                          : lead.origin === 'cloud'
+                            ? 'Cloud'
+                            : 'Migrated'}
                       </span>
                     </td>
                   </tr>

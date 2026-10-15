@@ -6,7 +6,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   createLeadStore,
-  getLeadStore,
+  getLocalLeadStore,
   getMigratedLeads,
   loadMigratedLeads,
 } from './leadData';
@@ -76,7 +76,7 @@ describe('combined store (migrated + session)', () => {
 
     // requirement 8: nothing from the CSV was imported into session memory
     expect(await session.list()).toHaveLength(0);
-    expect(await getLeadStore().list()).toHaveLength(31); // global store also clean
+    expect(await getLocalLeadStore().list()).toHaveLength(31); // global store also clean
   });
 
   it('finds duplicates across migrated data first', async () => {
@@ -126,7 +126,7 @@ describe('combined store (migrated + session)', () => {
   it('shows a submitted lead immediately without any refresh (integration)', async () => {
     const session = createMemoryLeadRepository();
     setLeadRepository(session); // what the app does through getLeadStore()
-    const store = getLeadStore();
+    const store = getLocalLeadStore();
 
     const before = await store.list();
     expect(before.some((lead) => lead.phone === '9123456789')).toBe(false);

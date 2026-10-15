@@ -19,9 +19,12 @@ export type LeadSource = 'Website' | 'Voice Agent' | 'Dealer Walk-in' | 'WhatsAp
 /**
  * Where a lead record came from:
  *   'migrated' — one of the 31 cleaned legacy rows from data-out/cleaned_leads.csv
+ *                (bundled copy in local mode, or imported into Firestore by
+ *                the migration script — the document keeps this origin)
  *   'session'  — submitted in this browser tab (temporary memory only)
+ *   'cloud'    — newly created through Cloud Firestore in this phase
  */
-export type LeadOrigin = 'migrated' | 'session';
+export type LeadOrigin = 'migrated' | 'session' | 'cloud';
 
 /** Exact columns of data/legacy_leads.csv, before cleaning. */
 export interface LegacyLeadRow {

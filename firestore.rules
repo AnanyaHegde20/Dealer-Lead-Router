@@ -1,0 +1,136 @@
+rules_version = '2';
+
+// Firestore security rules — least privilege.
+//
+// Design decisions:
+//  * Every operation requires an authenticated user (request.auth != null).
+//  * Leads have an EXACT allowed field set: unknown fields such as a
+//    client-supplied `role` or `isAdmin` flag cause the write to fail.
+//  * The dealer assignment is RECOMPUTED from the pincode inside the rules,
+//    so a client cannot claim a dealer it was not routed to (and cannot send
+//    itself to In-house Sales while naming a real dealer, or vice versa).
+//  * Leads are immutable from the client (no update/delete). Status changes
+//    need a validated update path in a later phase.
+//  * phoneIndex/{phone} documents enforce one lead per mobile number:
+//    they can be created once and never changed, giving the database a
+//    uniqueness check that does not depend on client-side queries.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function leadFields() {
+      return ['lead_id', 'name', 'phone', 'pincode', 'dealer_id', 'dealer_name',
+              'city', 'product', 'source', 'created_on', 'status', 'origin'];
+    }
+
+    function validPhone(v) {
+      return v is string && v.matches('^[6-9][0-9]{9}$');
+    }
+
+    function validPincode(v) {
+      return v is string && v.matches('^[1-9][0-9]{5}$');
+    }
+
+    function validDate(v) {
+      return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    // Prefix -> dealer, mirroring data/dealers.csv (regenerate rules if
+    // dealers.csv ever changes).
+    function expectedDealerId(pincode) {
+      return pincode.matches('^500[0-9]{3}$') ? 'D01'
+        : pincode.matches('^502[0-9]{3}$') ? 'D02'
+        : pincode.matches('^506[0-9]{3}$') ? 'D03'
+        : pincode.matches('^505[0-9]{3}$') ? 'D04'
+        : pincode.matches('^530[0-9]{3}$') ? 'D05'
+        : pincode.matches('^531[0-9]{3}$') ? 'D05'
+        : pincode.matches('^520[0-9]{3}$') ? 'D06'
+        : pincode.matches('^521[0-9]{3}$') ? 'D06'
+        : pincode.matches('^522[0-9]{3}$') ? 'D07'
+        : pincode.matches('^517[0-9]{3}$') ? 'D08'
+        : '';
+    }
+
+    function dealerName(id) {
+      return id == 'D01' ? 'Sri Sai Power Solutions'
+        : id == 'D02' ? 'Kandi Energy Point'
+        : id == 'D03' ? 'Warangal Green Systems'
+        : id == 'D04' ? 'Karimnagar Solar Hub'
+        : id == 'D05' ? 'Vizag Home Power'
+        : id == 'D06' ? 'Krishna Energy Store'
+        : id == 'D07' ? 'Guntur Battery World'
+        : id == 'D08' ? 'Tirupati PowerHouse'
+        : id == '' ? 'In-house Sales'
+        : 'UNKNOWN';
+    }
+
+    function dealerCity(id) {
+      return id == 'D01' ? 'Hyderabad'
+        : id == 'D02' ? 'Sangareddy'
+        : id == 'D03' ? 'Warangal'
+        : id == 'D04' ? 'Karimnagar'
+        : id == 'D05' ? 'Visakhapatnam'
+        : id == 'D06' ? 'Vijayawada'
+        : id == 'D07' ? 'Guntur'
+        : id == 'D08' ? 'Tirupati'
+        : id == '' ? ''
+        : 'UNKNOWN';
+    }
+
+    function validLeadWrite() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(leadFields())
+        && d.keys().hasAll(leadFields())
+        && d.lead_id is string && d.lead_id.matches('^[A-Za-z0-9_-]{5,20}$')
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 100
+        && validPhone(d.phone)
+        && validPincode(d.pincode)
+        && d.dealer_id is string && d.dealer_id == expectedDealerId(d.pincode)
+        && d.dealer_name is string && d.dealer_name == dealerName(d.dealer_id)
+        && d.city is string && d.city == dealerCity(d.dealer_id)
+        && d.product is string
+          && d.product in ['PuREPower Home 3kWh', 'PuREPower Home 5kWh', 'PuREPower Commercial 10kWh']
+        && d.source is string
+          && d.source in ['Website', 'Voice Agent', 'Dealer Walk-in', 'WhatsApp']
+        && validDate(d.created_on)
+        && d.status is string && d.status in ['New', 'Contacted', 'Converted', 'Lost']
+        && d.origin is string && d.origin in ['migrated', 'cloud'];
+    }
+
+    match /leads/{leadId} {
+      // Lead data is business data: readable by signed-in users only.
+      allow read: if signedIn();
+
+      // Create: fully validated, dealer recomputed from the pincode,
+      // document id must equal the lead_id field. No role-like fields exist.
+      allow create: if signedIn()
+        && validLeadWrite()
+        && request.resource.data.lead_id == leadId;
+
+      // No client-side updates or deletions in this phase.
+      allow update, delete: if false;
+    }
+
+    match /phoneIndex/{phone} {
+      // Uniqueness ledger: one document per normalized mobile number.
+      allow read: if signedIn();
+
+      // Create once, with an exact 2-field shape. Creating again fails at
+      // the database level (the document already exists), which is what
+      // makes the duplicate check race-safe across clients.
+      allow create: if signedIn()
+        && phone.matches('^[6-9][0-9]{9}$')
+        && request.resource.data.keys().hasOnly(['phone', 'lead_id'])
+        && request.resource.data.phone == phone
+        && request.resource.data.lead_id is string
+        && request.resource.data.lead_id.size() >= 5
+        && request.resource.data.lead_id.size() <= 20;
+
+      // The ledger is append-only for clients.
+      allow update, delete: if false;
+    }
+  }
+}

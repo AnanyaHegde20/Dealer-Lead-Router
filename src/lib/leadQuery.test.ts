@@ -3,7 +3,7 @@
  * migrated leads plus session submissions.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getLeadStore, getMigratedLeads } from './leadData';
+import { getLocalLeadStore, getMigratedLeads } from './leadData';
 import { submitLeadForm, type LeadFormValues } from './leadForm';
 import { DEFAULT_LEAD_QUERY, filterLeads, isDefaultQuery } from './leadQuery';
 import { resetLeadRepository } from './leadRepository';
@@ -82,6 +82,12 @@ describe('filterLeads — dropdowns', () => {
   it('filters by record origin', () => {
     expect(filterLeads(migrated, { ...DEFAULT_LEAD_QUERY, origin: 'migrated' })).toHaveLength(31);
     expect(filterLeads(migrated, { ...DEFAULT_LEAD_QUERY, origin: 'session' })).toHaveLength(0);
+    expect(filterLeads(migrated, { ...DEFAULT_LEAD_QUERY, origin: 'cloud' })).toHaveLength(0);
+
+    const cloudLead = { ...migrated[0], lead_id: 'CLOUD01', origin: 'cloud' as const };
+    const mixed = [cloudLead, ...migrated];
+    expect(filterLeads(mixed, { ...DEFAULT_LEAD_QUERY, origin: 'cloud' })).toHaveLength(1);
+    expect(filterLeads(mixed, { ...DEFAULT_LEAD_QUERY, origin: 'migrated' })).toHaveLength(31);
   });
 
   it('combines filters with AND', () => {
@@ -99,7 +105,7 @@ describe('filterLeads — dropdowns', () => {
 
 describe('filterLeads — session submissions', () => {
   it('finds a just-submitted lead and separates origins', async () => {
-    const store = getLeadStore();
+    const store = getLocalLeadStore();
     expect((await submitLeadForm(sessionLead, store)).ok).toBe(true);
     const leads = await store.list();
 

@@ -6,7 +6,7 @@ import type { Lead, LeadStatus } from './types';
 
 export type StatusFilter = LeadStatus | 'all';
 export type DealerFilter = string | 'all'; // dealer_id value, '' = In-house Sales, or 'all'
-export type OriginFilter = 'all' | 'migrated' | 'session';
+export type OriginFilter = 'all' | 'migrated' | 'session' | 'cloud';
 
 export interface LeadQuery {
   search: string;

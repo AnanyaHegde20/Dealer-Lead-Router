@@ -57,11 +57,15 @@ export function DashboardPage({ leads, ready }: DashboardPageProps) {
     <div className="space-y-6">
       <PageHeader title="Dashboard" subtitle="Lead counts by dealer and by status" />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${
+          stats.cloud > 0 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'
+        }`}
+      >
         <StatCard
           label="Total leads"
           value={stats.total}
-          caption="Migrated legacy + this session"
+          caption="Migrated, session and cloud records"
         />
         <StatCard
           label="Migrated leads"
@@ -85,6 +89,14 @@ export function DashboardPage({ leads, ready }: DashboardPageProps) {
           caption="Valid pincode, no matching dealer"
           tone="emerald"
         />
+        {stats.cloud > 0 ? (
+          <StatCard
+            label="Cloud leads"
+            value={stats.cloud}
+            caption="Stored in Cloud Firestore"
+            tone="emerald"
+          />
+        ) : null}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -163,8 +175,8 @@ export function DashboardPage({ leads, ready }: DashboardPageProps) {
       {stats.session > 0 ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
           {stats.session} lead{stats.session === 1 ? ' is' : 's are'} stored in temporary browser
-          memory only and will disappear on refresh. Nothing has been saved to a server — Cloud
-          Firestore arrives in Phase 5.
+          memory only and will disappear on refresh. Nothing has been saved to a server — this
+          build is running without a Firebase configuration (local mode).
         </p>
       ) : null}
 

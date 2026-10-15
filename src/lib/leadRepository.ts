@@ -22,6 +22,30 @@ export interface LeadRepository {
   create(lead: Lead): Promise<void>;
 }
 
+/**
+ * Thrown when a normalized mobile number is already taken.
+ *
+ * `holder` is the lead_id of the existing record when known (Firestore
+ * phoneIndex provides it), enabling a specific error message instead of a
+ * generic one. Duplicates are enforced at the database level (transactional
+ * phoneIndex write), not merely by a client-side query.
+ */
+export class DuplicateMobileError extends Error {
+  readonly phone: string;
+  readonly holder?: string;
+
+  constructor(phone: string, holder?: string) {
+    super(
+      holder
+        ? `This mobile number is already registered to lead ${holder}.`
+        : 'This mobile number is already registered.',
+    );
+    this.name = 'DuplicateMobileError';
+    this.phone = phone;
+    this.holder = holder;
+  }
+}
+
 /** Temporary tab-memory implementation. Empty on every page load. */
 export function createMemoryLeadRepository(seed: Lead[] = []): LeadRepository {
   const rows: Lead[] = [...seed];

@@ -7,7 +7,7 @@
  *   assignDealer.ts -> prefix routing against data-out/dealers.json
  */
 import { assignDealer } from './assignDealer';
-import type { LeadRepository } from './leadRepository';
+import { DuplicateMobileError, type LeadRepository } from './leadRepository';
 import type { DealerAssignment, Lead, LeadSource, LeadStatus } from './types';
 import { validateMobile, validatePincode } from './validate';
 
@@ -149,6 +149,17 @@ export async function submitLeadForm(
     origin: 'session',
   };
 
-  await repository.create(lead);
+  try {
+    await repository.create(lead);
+  } catch (error) {
+    // Race-safe duplicate: another submit claimed this mobile between our
+    // findByMobile check and the write. The repository enforces it at the
+    // database level (transactional phoneIndex), so surface it as a field
+    // error instead of crashing the form.
+    if (error instanceof DuplicateMobileError) {
+      return { ok: false, errors: { phone: error.message } };
+    }
+    throw error;
+  }
   return { ok: true, lead };
 }

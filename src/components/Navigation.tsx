@@ -19,6 +19,10 @@ const NAV_ITEMS: NavItem[] = [
 interface NavigationProps {
   active: PageId;
   onNavigate: (page: PageId) => void;
+  /** Signed-in user's email, or null in local mode (no cloud account). */
+  userEmail?: string | null;
+  /** Present only when Firebase is configured. */
+  onSignOut?: () => void;
 }
 
 function Brand() {
@@ -51,7 +55,7 @@ function itemClasses(active: boolean, mobile: boolean): string {
 }
 
 /** Responsive navigation: dark sidebar on desktop, top bar on mobile. */
-export function Navigation({ active, onNavigate }: NavigationProps) {
+export function Navigation({ active, onNavigate, userEmail = null, onSignOut }: NavigationProps) {
   return (
     <>
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900 lg:flex">
@@ -72,14 +76,37 @@ export function Navigation({ active, onNavigate }: NavigationProps) {
             </button>
           ))}
         </nav>
-        <div className="border-t border-slate-800 px-6 py-4 text-xs text-slate-500">
-          Phase 2 · Frontend scaffold
+        <div className="space-y-3 border-t border-slate-800 px-6 py-4">
+          {userEmail ? (
+            <div className="space-y-2">
+              <p className="truncate text-xs text-slate-400" title={userEmail}>
+                Signed in as {userEmail}
+              </p>
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="w-full rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : null}
+          <p className="text-xs text-slate-500">Phase 5 · Firebase integration</p>
         </div>
       </aside>
 
       <header className="sticky top-0 z-20 bg-slate-900 lg:hidden">
-        <div className="px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3">
           <Brand />
+          {userEmail ? (
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              Sign out
+            </button>
+          ) : null}
         </div>
         <nav
           className="flex gap-1 overflow-x-auto px-2 pb-2"

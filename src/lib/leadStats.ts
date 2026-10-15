@@ -21,6 +21,8 @@ export interface DashboardStats {
   inHouse: number;
   migrated: number;
   session: number;
+  /** Leads read from / written to Cloud Firestore this phase. */
+  cloud: number;
 }
 
 /** Percentage of `count` in `total`, rounded to 1 decimal; 0 when total is 0. */
@@ -43,6 +45,7 @@ export function computeDashboardStats(leads: Lead[]): DashboardStats {
   let inHouse = 0;
   let migrated = 0;
   let session = 0;
+  let cloud = 0;
 
   for (const lead of leads) {
     byStatus[lead.status] = (byStatus[lead.status] ?? 0) + 1;
@@ -51,6 +54,7 @@ export function computeDashboardStats(leads: Lead[]): DashboardStats {
     }
     byDealer.set(lead.dealer_id, (byDealer.get(lead.dealer_id) ?? 0) + 1);
     if (lead.origin === 'session') session += 1;
+    else if (lead.origin === 'cloud') cloud += 1;
     else migrated += 1;
   }
 
@@ -71,5 +75,5 @@ export function computeDashboardStats(leads: Lead[]): DashboardStats {
   }
   dealerStats.sort((a, b) => b.count - a.count || a.dealer_name.localeCompare(b.dealer_name));
 
-  return { total, byStatus, dealerStats, inHouse, migrated, session };
+  return { total, byStatus, dealerStats, inHouse, migrated, session, cloud };
 }

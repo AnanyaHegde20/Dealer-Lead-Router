@@ -14,6 +14,8 @@
  */
 import cleanedLeadsCsv from '../../data-out/cleaned_leads.csv?raw';
 import { csvToObjects } from './csv';
+import { isFirebaseConfigured } from './firebase';
+import { createFirestoreRepository } from './firestoreRepository';
 import { getLeadRepository, type LeadRepository } from './leadRepository';
 import type { Lead, LeadStatus } from './types';
 
@@ -68,7 +70,27 @@ export function createLeadStore(session: LeadRepository): LeadRepository {
   };
 }
 
-/** The store the UI uses: migrated data + the current session repository. */
+/**
+ * The store the UI uses.
+ *
+ * Firebase configured  → Cloud Firestore (real cloud data, created via
+ *                        scripts/import_legacy_leads.mjs — see
+ *                        FIREBASE_SETUP.md). The bundled CSV is NOT merged
+ *                        in, so migrated ids can never be double-counted.
+ * No Firebase config   → LOCAL mode: bundled migrated CSV + tab memory.
+ *                        Clearly labelled in the UI banner.
+ */
 export function getLeadStore(): LeadRepository {
+  if (isFirebaseConfigured) {
+    return createFirestoreRepository();
+  }
+  return getLocalLeadStore();
+}
+
+/**
+ * Local-only store (bundled CSV + session repository).
+ * Tests import this directly so they pass with or without Firebase config.
+ */
+export function getLocalLeadStore(): LeadRepository {
   return createLeadStore(getLeadRepository());
 }
