@@ -12,7 +12,7 @@ import { SignInPage } from './pages/SignInPage';
  * Application shell: responsive navigation + the active page.
  * Routing is a simple useState — no router dependency needed for 3 pages.
  *
- * Auth gate (Phase 5):
+ * Auth gate:
  *   - Firebase configured & no user  → only <SignInPage> (data stays protected)
  *   - Firebase configured & user in  → the app, signed-in identity visible
  *   - no configuration (LOCAL mode)  → the app over bundled CSV + tab memory,

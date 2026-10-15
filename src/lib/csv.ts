@@ -1,6 +1,6 @@
 /**
  * Minimal RFC-4180-style CSV parser (read-only helper for loading the
- * Phase 1 output into the frontend). Handles quoted fields, escaped
+ * cleaned CSV into the frontend). Handles quoted fields, escaped
  * quotes ("") and CRLF line endings.
  */
 export function parseCsv(text: string): string[][] {

@@ -1,14 +1,11 @@
+import { isFirebaseConfigured } from '../lib/firebase';
 import type { Lead } from '../lib/types';
 
 interface SessionLeadsPanelProps {
   leads: Lead[];
 }
 
-/**
- * Leads submitted in this browser session, with an explicit warning that
- * they live in memory only. This replaces any temptation to show fake
- * dashboard numbers: these rows are real submissions, clearly labelled.
- */
+/** Leads submitted in this browser session, clearly labelled by storage mode. */
 export function SessionLeadsPanel({ leads }: SessionLeadsPanelProps) {
   if (leads.length === 0) {
     return null;
@@ -20,8 +17,9 @@ export function SessionLeadsPanel({ leads }: SessionLeadsPanelProps) {
           Leads created this session ({leads.length})
         </h2>
         <p className="mt-0.5 text-xs text-amber-800">
-          Held in temporary browser memory only — refreshing the page clears them. No server has
-          received these rows; Cloud Firestore replaces this store in Phase 5.
+          {isFirebaseConfigured
+            ? 'Stored in Cloud Firestore and listed on the Leads and Dashboard pages.'
+            : 'Held in temporary browser memory only — refreshing the page clears them. Nothing has been sent to a server.'}
         </p>
       </div>
       <div className="overflow-x-auto">

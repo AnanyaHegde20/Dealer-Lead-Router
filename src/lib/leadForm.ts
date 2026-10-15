@@ -79,7 +79,7 @@ export function getDealerPreview(pincode: string): DealerAssignment | null {
 
 let idSequence = 0;
 
-/** Session lead id. Phase 5 will use the Firestore document id instead. */
+/** Session-unique lead id (Cloud Firestore generates its own ids on write). */
 export function nextLeadId(): string {
   idSequence += 1;
   return `L${Date.now().toString(36).toUpperCase()}-${idSequence}`;

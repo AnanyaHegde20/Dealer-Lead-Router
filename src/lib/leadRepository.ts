@@ -1,15 +1,10 @@
 /**
  * Lead persistence boundary.
  *
- * Phase 3 (NOW): an in-memory store lives in the browser tab only.
- *   - Nothing is sent to a server.
- *   - Refreshing the page clears it. It holds ONLY leads the user submits
- *     in this session — it is never seeded with sample data.
- *
- * Phase 5 (LATER): implement the same `LeadRepository` interface with Cloud
- * Firestore and install it via `setLeadRepository(firestoreRepository)`.
- * The form and its duplicate check will not need to change at all, because
- * they only ever talk to this interface.
+ * Backends behind this interface:
+ *   - tab memory (local mode / tests): never sent to a server, cleared on refresh
+ *   - Cloud Firestore (configured): see firestoreRepository.ts
+ * The form and its duplicate check only ever talk to this interface.
  */
 import type { Lead } from './types';
 
@@ -64,12 +59,12 @@ export function createMemoryLeadRepository(seed: Lead[] = []): LeadRepository {
 
 let activeRepository: LeadRepository = createMemoryLeadRepository();
 
-/** The repository the form currently uses (memory until Phase 5). */
+/** The repository behind getLeadStore() (memory in local mode; tests can swap it). */
 export function getLeadRepository(): LeadRepository {
   return activeRepository;
 }
 
-/** Swap the storage backend — this is the single change Firestore needs later. */
+/** Swap the storage backend. */
 export function setLeadRepository(repository: LeadRepository): void {
   activeRepository = repository;
 }

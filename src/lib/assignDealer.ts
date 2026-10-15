@@ -4,7 +4,7 @@
  *   valid pincode with no matching prefix -> "In-house Sales"
  *   INVALID pincode -> null (never assigned to anyone)
  *
- * The mapping is imported from the Phase 1 output, so the app and the Python
+ * The mapping is imported from data-out/dealers.json, so the app and the Python
  * script can never disagree about which dealer owns which prefix.
  */
 import dealersJson from '../../data-out/dealers.json';
@@ -18,7 +18,7 @@ export function getDealerLookup(): DealerLookup {
   return lookup;
 }
 
-/** All 8 dealers from data/dealers.csv, pre-processed by Phase 1. */
+/** All 8 dealers from data/dealers.csv, pre-processed by scripts/clean_legacy_leads.py. */
 export function getDealers(): Dealer[] {
   return lookup.dealers;
 }

@@ -76,23 +76,20 @@ export function Navigation({ active, onNavigate, userEmail = null, onSignOut }: 
             </button>
           ))}
         </nav>
-        <div className="space-y-3 border-t border-slate-800 px-6 py-4">
-          {userEmail ? (
-            <div className="space-y-2">
-              <p className="truncate text-xs text-slate-400" title={userEmail}>
-                Signed in as {userEmail}
-              </p>
-              <button
-                type="button"
-                onClick={onSignOut}
-                className="w-full rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-              >
-                Sign out
-              </button>
-            </div>
-          ) : null}
-          <p className="text-xs text-slate-500">Phase 5 · Firebase integration</p>
-        </div>
+        {userEmail ? (
+          <div className="border-t border-slate-800 px-6 py-4">
+            <p className="truncate text-xs text-slate-400" title={userEmail}>
+              Signed in as {userEmail}
+            </p>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="mt-2 w-full rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              Sign out
+            </button>
+          </div>
+        ) : null}
       </aside>
 
       <header className="sticky top-0 z-20 bg-slate-900 lg:hidden">

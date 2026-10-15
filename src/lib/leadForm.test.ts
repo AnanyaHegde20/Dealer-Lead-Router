@@ -1,9 +1,7 @@
 /**
- * Phase 3 tests for the Add Lead form logic.
- *
- * Covers exactly the required scenarios:
- *   valid submission, missing name, invalid mobile, invalid pincode,
- *   dealer preview, unmatched dealer preview, duplicate mobile handling.
+ * Tests for the Add Lead form logic:
+ * valid submission, missing name, invalid mobile, invalid pincode,
+ * dealer preview, unmatched dealer preview, duplicate mobile handling.
  * All against real data (dealers.json prefixes, real legacy edge cases).
  */
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -213,7 +211,7 @@ describe('submitLeadForm — duplicate mobile handling', () => {
   });
 });
 
-describe('repository swap — the single change Firestore needs later', () => {
+describe('repository swap', () => {
   it('routes submissions through whatever backend is installed', async () => {
     const seen: string[] = [];
     const fakeFirestore: LeadRepository = {

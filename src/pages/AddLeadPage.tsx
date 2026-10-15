@@ -9,11 +9,7 @@ interface AddLeadPageProps {
   onLeadSaved?: () => void;
 }
 
-/**
- * Add Lead screen (Phase 3): validated form + live dealer preview.
- * Storage goes through LeadRepository, which is in-memory until Phase 5,
- * so the UI never claims a lead reached a server.
- */
+/** Validated form + live dealer preview, with the session's submissions below. */
 export function AddLeadPage({ onLeadSaved }: AddLeadPageProps) {
   const [sessionLeads, setSessionLeads] = useState<Lead[]>([]);
 

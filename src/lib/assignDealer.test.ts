@@ -3,7 +3,7 @@ import { assignDealer, getDealerLookup, getDealers, getPrefixMap } from './assig
 
 const lookup = getDealerLookup();
 
-describe('dealers.json mapping (real Phase 1 output)', () => {
+describe('dealers.json mapping', () => {
   it('contains all 8 dealers from data/dealers.csv', () => {
     expect(getDealers()).toHaveLength(8);
     expect(getDealers().map((d) => d.dealer_id)).toEqual([

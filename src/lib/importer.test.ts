@@ -58,7 +58,7 @@ describe('loadPrefixMap', () => {
   });
 });
 
-describe('buildLeadDocs — real Phase 1 output', () => {
+describe('buildLeadDocs — the real cleaned CSV', () => {
   it('accepts all 31 cleaned leads with zero errors', () => {
     const rows = parseCsv(cleanedCsv);
     expect(rows).toHaveLength(31);

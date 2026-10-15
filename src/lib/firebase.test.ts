@@ -1,6 +1,6 @@
 /**
- * Phase 5 unit tests — pure configuration/auth logic that must be verified
- * WITHOUT any emulator or real Firebase project (npm test stays offline).
+ * Unit tests for pure configuration/auth logic — no emulator and no real
+ * Firebase project (npm test stays offline).
  */
 import { describe, expect, it } from 'vitest';
 import { mapAuthError, resolveAppAccess } from './auth';

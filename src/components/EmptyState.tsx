@@ -8,10 +8,7 @@ interface EmptyStateProps {
   children?: ReactNode;
 }
 
-/**
- * Shown whenever a screen has no real data yet.
- * Phase 2 deliberately renders this instead of fabricated statistics.
- */
+/** Shown whenever a screen has no real data yet — never fabricated numbers. */
 export function EmptyState({ title, description, icon, children }: EmptyStateProps) {
   return (
     <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">

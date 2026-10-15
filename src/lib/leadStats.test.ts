@@ -1,6 +1,6 @@
 /**
  * Dashboard calculation tests — all expectations are real counts from
- * data-out/cleaned_leads.csv (31 migrated leads, verified in Phase 1).
+ * data-out/cleaned_leads.csv (31 migrated leads).
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getLocalLeadStore, getMigratedLeads } from './leadData';

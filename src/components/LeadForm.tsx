@@ -10,6 +10,7 @@ import {
   type LeadFormValues,
 } from '../lib/leadForm';
 import { getLeadStore } from '../lib/leadData';
+import { isFirebaseConfigured } from '../lib/firebase';
 import type { Lead } from '../lib/types';
 import { validateMobile } from '../lib/validate';
 import { PlusIcon } from './icons';
@@ -157,8 +158,9 @@ export function LeadForm({ onSaved }: LeadFormProps) {
             Lead {savedLead.lead_id} created — assigned to {savedLead.dealer_name}
           </p>
           <p className="mt-0.5 text-xs">
-            Saved to temporary browser memory only. Nothing has been sent to a server; Cloud
-            Firestore takes over in Phase 5.
+            {isFirebaseConfigured
+              ? 'Stored in Cloud Firestore and listed on the Leads and Dashboard pages.'
+              : 'Saved in this browser session only — nothing has been sent to a server.'}
           </p>
         </div>
       ) : null}

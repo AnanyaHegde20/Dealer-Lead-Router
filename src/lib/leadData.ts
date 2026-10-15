@@ -1,5 +1,5 @@
 /**
- * Data-access layer for Phase 4.
+ * Data-access layer.
  *
  * Combines two sources into one LeadRepository:
  *   1. MIGRATED leads — the 31 cleaned legacy rows from
@@ -21,7 +21,7 @@ import type { Lead, LeadStatus } from './types';
 
 const VALID_STATUSES: readonly LeadStatus[] = ['New', 'Contacted', 'Converted', 'Lost'];
 
-/** Parse the Phase 1 output into typed Lead objects (read-only). */
+/** Parse the cleaned CSV into typed Lead objects (read-only). */
 export function loadMigratedLeads(text: string = cleanedLeadsCsv): Lead[] {
   return csvToObjects(text)
     .filter((row) => VALID_STATUSES.includes(row.status as LeadStatus))

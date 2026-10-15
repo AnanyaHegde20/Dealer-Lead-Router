@@ -1,5 +1,5 @@
 /**
- * Phase 4 tests: loading the migrated CSV, the combined store, and the
+ * Tests for loading the migrated CSV, the combined store, and the
  * integration between submitted leads and the store.
  * Expected numbers come from the real data-out/cleaned_leads.csv (31 rows).
  */
@@ -74,7 +74,7 @@ describe('combined store (migrated + session)', () => {
     const rows = await store.list();
     expect(rows).toHaveLength(31);
 
-    // requirement 8: nothing from the CSV was imported into session memory
+    // nothing from the CSV is imported into session memory
     expect(await session.list()).toHaveLength(0);
     expect(await getLocalLeadStore().list()).toHaveLength(31); // global store also clean
   });

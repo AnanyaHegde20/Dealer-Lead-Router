@@ -2,7 +2,7 @@
 /**
  * Idempotent migration of the 31 cleaned legacy leads into Cloud Firestore.
  *
- * Source of truth: data-out/cleaned_leads.csv (Phase 1 output).
+ * Source of truth: data-out/cleaned_leads.csv.
  * data/legacy_leads.csv (uncleaned) is NEVER read, and data/dealers.csv is
  * read-only — used only to VALIDATE that every row's dealer assignment
  * matches the prefix table (the same table firestore.rules uses).

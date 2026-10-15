@@ -4,7 +4,7 @@
  * Pages re-read immediately after a save, so new leads show up
  * without refreshing the browser.
  *
- * Auth gate (Phase 5 fix): the fetch must wait until `access === 'app'`.
+ * Auth gate: the fetch must wait until `access === 'app'`.
  * Reading earlier fires an UNAUTHENTICATED Firestore request while the app
  * is still on the splash/sign-in screen; firestore.rules rejects it with
  * "Missing or insufficient permissions". The gate also re-arms the effect

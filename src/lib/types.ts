@@ -10,10 +10,10 @@
 /** Fallback route when a valid pincode matches no dealer prefix. */
 export const IN_HOUSE_SALES = 'In-house Sales';
 
-/** Status vocabulary produced by the Phase 1 cleaning script. */
+/** Status vocabulary produced by the cleaning script. */
 export type LeadStatus = 'New' | 'Contacted' | 'Converted' | 'Lost';
 
-/** Source vocabulary produced by the Phase 1 cleaning script. */
+/** Source vocabulary produced by the cleaning script. */
 export type LeadSource = 'Website' | 'Voice Agent' | 'Dealer Walk-in' | 'WhatsApp';
 
 /**
@@ -69,7 +69,7 @@ export interface DealerCsvRow {
   contact_email: string;
 }
 
-/** Dealer as written by Phase 1 into data-out/dealers.json (prefixes split into an array). */
+/** Dealer as written into data-out/dealers.json (prefixes split into an array). */
 export interface Dealer {
   dealer_id: string;
   dealer_name: string;
