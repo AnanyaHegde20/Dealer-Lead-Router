@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { mapAuthError, resolveAppAccess } from './auth';
 import { readFirebaseConfig } from './firebase';
+import { shouldLoadLeads } from './useLeads';
 
 describe('readFirebaseConfig', () => {
   it('returns null when nothing is configured (local mode)', () => {
@@ -93,6 +94,36 @@ describe('resolveAppAccess', () => {
 
   it('shows the app in local mode even without a user', () => {
     expect(resolveAppAccess({ configured: false, initializing: false, user: null })).toBe('app');
+  });
+});
+
+describe('shouldLoadLeads (data-fetch gate)', () => {
+  it('blocks every fetch while the auth gate is closed', () => {
+    // splash: auth still initialising — a fetch here would be anonymous
+    expect(shouldLoadLeads('splash')).toBe(false);
+    // signin: user not signed in — firestore.rules would deny the read
+    expect(shouldLoadLeads('signin')).toBe(false);
+  });
+
+  it('allows fetching only once the app shell is visible', () => {
+    expect(shouldLoadLeads('app')).toBe(true);
+  });
+
+  it('matches resolveAppAccess for every gate state (regression: pre-auth fetch)', () => {
+    const user = { uid: 'u1' } as never;
+    expect(
+      shouldLoadLeads(resolveAppAccess({ configured: true, initializing: true, user: null })),
+    ).toBe(false);
+    expect(
+      shouldLoadLeads(resolveAppAccess({ configured: true, initializing: false, user: null })),
+    ).toBe(false);
+    expect(
+      shouldLoadLeads(resolveAppAccess({ configured: true, initializing: false, user })),
+    ).toBe(true);
+    // local mode: no cloud data to protect → fetch enabled immediately
+    expect(
+      shouldLoadLeads(resolveAppAccess({ configured: false, initializing: false, user: null })),
+    ).toBe(true);
   });
 });
 

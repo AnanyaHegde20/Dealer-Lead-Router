@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Navigation, type PageId } from './components/Navigation';
 import { resolveAppAccess, signOut } from './lib/auth';
 import { useAuth } from './lib/useAuth';
-import { useLeads } from './lib/useLeads';
+import { shouldLoadLeads, useLeads } from './lib/useLeads';
 import { AddLeadPage } from './pages/AddLeadPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LeadsPage } from './pages/LeadsPage';
@@ -20,9 +20,12 @@ import { SignInPage } from './pages/SignInPage';
  */
 export default function App() {
   const { user, initializing, configured } = useAuth();
+  // Auth gate is resolved BEFORE any data hook runs: leads are only fetched
+  // once the app shell is actually visible (signed in, or local mode).
+  const access = resolveAppAccess({ configured, initializing, user });
   const [page, setPage] = useState<PageId>('dashboard');
   const [revision, setRevision] = useState(0);
-  const { leads, ready } = useLeads(revision);
+  const { leads, ready } = useLeads(revision, shouldLoadLeads(access));
 
   const refreshLeads = useCallback(() => {
     setRevision((value) => value + 1);
@@ -33,8 +36,6 @@ export default function App() {
       // Sign-out failures keep the user signed in; nothing else to do here.
     });
   }, []);
-
-  const access = resolveAppAccess({ configured, initializing, user });
 
   if (access === 'splash') {
     return (
