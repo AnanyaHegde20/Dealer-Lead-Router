@@ -1,0 +1,7 @@
+{
+  "projectName": "PURE Energy · Dealer Lead Router",
+  "location": "Kandi",
+  "deploymentUrl": "https://dealer-lead-router.web.app",
+  "repositoryUrl": "https://github.com/AnanyaHegde20/Dealer-Lead-Router",
+  "description": "Dealer lead routing application: cleans 40 legacy CSV rows into 31 verified leads, assigns each lead to one of 8 dealers by pincode prefix with an in-house fallback, and manages leads through a React dashboard, searchable lead list, and validated add-lead form backed by email/password-authenticated Cloud Firestore with least-privilege security rules."
+}
