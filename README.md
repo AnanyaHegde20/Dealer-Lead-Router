@@ -64,6 +64,60 @@ npm run build        # typecheck + production bundle into dist/
 npm run preview      # serve the production bundle locally
 ```
 
+## Assumptions
+
+- **Town:** the plant is located in **Kandi** (line 1 of this file).
+- **Trust model:** this is a single-team internal MIS. Any user signed in
+  with an email/password account is treated as trusted staff — there are no
+  per-user roles; `firestore.rules` gate on authentication only. Accounts
+  are provisioned by the administrator in the Firebase console (no
+  self-signup).
+- **Identity of a lead:** a normalized 10-digit mobile identifies exactly
+  one customer. On duplicates the earliest input row wins and later rows are
+  merged into it (see `reports/reconciliation.csv`).
+- **Assignment:** a valid 6-digit pincode is routed by its first three
+  digits to one of 8 dealers; a valid pincode with no matching prefix goes
+  to **In-house Sales** (never dropped); invalid rows are rejected, never
+  silently imported.
+- **Lead lifecycle:** clients may only create leads — documents are
+  immutable for clients, and status changes assume an admin/trusted path
+  outside the current UI.
+- **Source of truth:** `data-out/cleaned_leads.csv` (plus
+  `reports/reconciliation.csv`) is what gets migrated; the raw input CSVs
+  are frozen and never edited.
+- **No `.env` → local mode:** without Firebase configuration the app runs
+  against bundled data with an explicit amber banner; nothing is fake or
+  hidden.
+- **Toolchain:** developed and verified on Node 24, Python 3.10, JDK 17
+  (`firebase-tools` pinned to `^14`, which supports JDK 17).
+
+## Data problems found
+
+40 input rows produced 31 verified leads — 25 imported, 5 fixed, 5 merged,
+4 rejected, 1 routed in-house. Every row's disposition is in
+`reports/reconciliation.csv`. Concrete issues found in the legacy CSV:
+
+- **Malformed phone numbers** — `98480 22 431` (embedded spaces, L1004),
+  `+91-9000012345` and `+91 9633021001` (country-code prefixes, L1006,
+  L1037) → normalized to 10 digits.
+- **Too-short values** — phone `12345` has 5 digits (L1009); pincode `5000`
+  has 4 digits (L1012) → rejected.
+- **Impossible date** — `31/09/2026` (September has 30 days) (L1018) →
+  rejected.
+- **Missing required data** — empty customer name (L1026) → rejected.
+- **Inconsistent casing/whitespace** — status `converted ` with a trailing
+  space (L1020), source `website` in lowercase (L1028) → normalized to
+  canonical title case.
+- **Product-name variants** — `Pure power 5 kwh` (L1023) → canonical
+  `PuREPower Home 5kWh`.
+- **Duplicate mobiles** — 5 rows repeat a mobile already used by an earlier
+  lead (L1036, L1037, L1038, L1039, and a second L1033) → merged into the
+  original lead, never duplicated.
+- **Duplicate lead_id** — the id `L1033` was issued to two *different*
+  input records; the records are kept distinct and nothing is overwritten.
+- **Coverage gap** — pincode 110001 (prefix 110) matches no dealer in
+  `data/dealers.csv` (L1015) → routed to In-house Sales.
+
 ## Environment configuration
 
 Copy the placeholder file and fill in your own project's values:
