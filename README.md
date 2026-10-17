@@ -25,6 +25,16 @@ validated add-lead form backed by authenticated Cloud Firestore.
   to *In-house Sales*; invalid pincodes are never assigned.
 - **Dashboard** — totals by status and by dealer, computed from real data
   (no fabricated numbers), plus an empty state when no data exists.
+- **Status changes** — every row of the Leads table has a dropdown
+  (New / Contacted / Converted / Lost). Choosing a value saves through the
+  same repository layer as the form (`updateLeadStatus` on
+  `LeadRepository`), shows a "Saving…" state on the row, surfaces failures
+  in an inline alert (the optimistic value reverts), and re-reads the store
+  on success so Dashboard counts and filters refresh immediately. In cloud
+  mode `firestore.rules` permits the write only when `status` is the
+  *sole* changed field and holds one of the four allowed values; in local
+  mode the change lives in tab memory (session rows directly, migrated rows
+  via an override map — the bundled CSV stays read-only).
 - **Leads table** — free-text search plus status / dealer / origin filters.
 - **Add Lead form** — inline validation for mobile and pincode, live dealer
   preview while typing, duplicate-mobile rejection, immediate refresh of
@@ -79,9 +89,11 @@ npm run preview      # serve the production bundle locally
   digits to one of 8 dealers; a valid pincode with no matching prefix goes
   to **In-house Sales** (never dropped); invalid rows are rejected, never
   silently imported.
-- **Lead lifecycle:** clients may only create leads — documents are
-  immutable for clients, and status changes assume an admin/trusted path
-  outside the current UI.
+- **Lead lifecycle:** clients may create leads and change a lead's status
+  (New / Contacted / Converted / Lost) — nothing else. The security rules
+  verify via a field diff that `status` is the only column an update
+  touches; every other column stays immutable for clients and deletions
+  remain disabled.
 - **Source of truth:** `data-out/cleaned_leads.csv` (plus
   `reports/reconciliation.csv`) is what gets migrated; the raw input CSVs
   are frozen and never edited.
@@ -194,8 +206,12 @@ All three suites were run and passing at the time of this writing.
 - **Dealer recomputed server-side:** the rules recompute the dealer from the
   pincode using the same prefix table, so clients cannot claim a dealer they
   were not routed to.
-- **Immutable for clients:** no client-side updates or deletes of leads;
-  `phoneIndex` is append-only, making one-lead-per-mobile database-enforced
+- **Status-only updates:** clients may change nothing but `status`, and only
+  to New / Contacted / Converted / Lost. `firestore.rules` proves this with
+  `request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])`,
+  so an update that also touches the phone number, dealer or any other
+  column is rejected; deletes stay disabled. `phoneIndex` remains
+  append-only, making one-lead-per-mobile database-enforced
   (transactional, race-safe).
 - **Migration safety:** the import script validates every row against the
   same constraints the rules enforce before writing; it bypasses rules only

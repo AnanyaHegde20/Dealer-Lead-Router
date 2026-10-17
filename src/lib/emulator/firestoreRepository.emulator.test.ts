@@ -172,4 +172,31 @@ describe.runIf(Boolean(host && authHost))('createFirestoreRepository (emulator)'
     // The local preset id is replaced by the Firestore document id
     expect(found?.lead_id).not.toBe('MIG-TEST-01');
   });
+
+  it('updates lead status through the repository (status-only, rules-enforced)', async () => {
+    const repository = createFirestoreRepository(db);
+    const lead = buildLead({ phone: '9090000106', pincode: '502285', name: 'Status Changer' });
+    await repository.create(lead);
+    const created = await repository.findByMobile('9090000106');
+    expect(created?.status).toBe('New');
+
+    await repository.updateLeadStatus(created!.lead_id, 'Contacted');
+    expect((await repository.findByMobile('9090000106'))?.status).toBe('Contacted');
+
+    await repository.updateLeadStatus(created!.lead_id, 'Converted');
+    const updated = await repository.findByMobile('9090000106');
+    expect(updated?.status).toBe('Converted');
+    // only the status column moved
+    expect(updated?.phone).toBe('9090000106');
+    expect(updated?.dealer_id).toBe('D02');
+    expect(updated?.name).toBe('Status Changer');
+  });
+
+  it('rejects an unknown status locally and an update of a missing lead', async () => {
+    const repository = createFirestoreRepository(db);
+    await expect(
+      repository.updateLeadStatus('RULES001', 'Pending' as unknown as Lead['status']),
+    ).rejects.toThrow(/Invalid lead status/);
+    await expect(repository.updateLeadStatus('NO-SUCH-ID', 'Lost')).rejects.toThrow();
+  });
 });

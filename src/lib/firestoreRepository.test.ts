@@ -3,9 +3,10 @@
  * emulator and no network. Emulator behaviour lives in src/lib/emulator/.
  */
 import { describe, expect, it } from 'vitest';
-import { docToLead, LEAD_DOC_KEYS, leadToDoc } from './firestoreRepository';
+import type { Firestore } from 'firebase/firestore';
+import { createFirestoreRepository, docToLead, LEAD_DOC_KEYS, leadToDoc } from './firestoreRepository';
 import { DuplicateMobileError } from './leadRepository';
-import type { Lead } from './types';
+import type { Lead, LeadStatus } from './types';
 
 const sample: Lead = {
   lead_id: 'L1001',
@@ -68,5 +69,19 @@ describe('DuplicateMobileError', () => {
     expect(new DuplicateMobileError('9447712782').message).toBe(
       'This mobile number is already registered.',
     );
+  });
+});
+
+describe('updateLeadStatus validation', () => {
+  it('rejects an unknown status before touching Firestore', async () => {
+    // The db is never reached: validation throws first (the rules also
+    // enforce the four known values, defense in depth on both sides).
+    const repository = createFirestoreRepository({} as Firestore);
+    await expect(
+      repository.updateLeadStatus('L1001', 'Pending' as unknown as LeadStatus),
+    ).rejects.toThrow(/Invalid lead status/);
+    await expect(
+      repository.updateLeadStatus('L1001', '' as unknown as LeadStatus),
+    ).rejects.toThrow(/Invalid lead status/);
   });
 });

@@ -102,8 +102,9 @@ npm run build      # typecheck + production bundle
    to, nor claim “In-house Sales” while naming a real dealer. (If
    `data/dealers.csv` ever changes, regenerate the matching functions in
    `firestore.rules`.)
-4. **Leads are immutable for clients** — `update`/`delete` are denied; status
-   changes need a validated update path (later phase). `phoneIndex` is
+4. **Status-only updates** — clients may update nothing but `status` (one of
+   the four known values); a field diff rejects any write that also touches
+   the phone or any other column, and `delete` stays denied. `phoneIndex` is
    append-only, which is what makes the uniqueness ledger tamper-resistant.
 5. **Duplicate detection is database-enforced** — `findByMobile()` is only a
    friendly fast path; the guarantee is the transactional `phoneIndex`

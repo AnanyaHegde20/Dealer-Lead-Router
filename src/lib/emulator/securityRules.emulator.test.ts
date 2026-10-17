@@ -9,7 +9,7 @@
  *   - unauthenticated access denied
  *   - exact field allowlist (no client-supplied `role` flags)
  *   - dealer recomputed from the pincode (no self-assignment)
- *   - no client updates/deletes
+ *   - status-only client updates (any other field change or delete denied)
  *   - append-only duplicate index
  */
 import {
@@ -155,11 +155,57 @@ describe.runIf(Boolean(process.env.FIRESTORE_EMULATOR_HOST))('firestore.rules (e
     await assertFails(setDoc(doc(db, 'leads', 'RULES001'), missing));
   });
 
-  it('denies updates and deletions of leads for clients', async () => {
+  it('allows signed-in users to change ONLY the status field', async () => {
     const db = env.authenticatedContext('user-1').firestore();
     await assertSucceeds(setDoc(doc(db, 'leads', 'RULES001'), validLead()));
-    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { status: 'Converted' }));
+    for (const status of ['Contacted', 'Converted', 'Lost', 'New']) {
+      await assertSucceeds(updateDoc(doc(db, 'leads', 'RULES001'), { status }));
+    }
+    const after = await getDoc(doc(db, 'leads', 'RULES001'));
+    expect((after.data() as { status: string }).status).toBe('New');
+  });
+
+  it('rejects status updates that also touch phone or any other field', async () => {
+    const db = env.authenticatedContext('user-1').firestore();
+    await assertSucceeds(setDoc(doc(db, 'leads', 'RULES001'), validLead()));
+    // phone is the sensitive one — alone or bundled with a valid status
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { status: 'Converted', phone: '9090000099' }));
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { phone: '9090000099' }));
+    // identity, routing and metadata columns stay frozen too
     await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { dealer_id: 'D06' }));
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { name: 'Renamed Person' }));
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { status: 'Converted', origin: 'migrated' }));
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { lead_id: 'OTHER-ID' }));
+    // nothing changed on the server
+    const after = await getDoc(doc(db, 'leads', 'RULES001'));
+    expect((after.data() as { status: string }).status).toBe('New');
+    expect((after.data() as { phone: string }).phone).toBe('9090000011');
+    expect((after.data() as { dealer_id: string }).dealer_id).toBe('D02');
+  });
+
+  it('rejects an unknown status value', async () => {
+    const db = env.authenticatedContext('user-1').firestore();
+    await assertSucceeds(setDoc(doc(db, 'leads', 'RULES001'), validLead()));
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { status: 'Pending' }));
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { status: '' }));
+    await assertFails(updateDoc(doc(db, 'leads', 'RULES001'), { status: 42 }));
+    const after = await getDoc(doc(db, 'leads', 'RULES001'));
+    expect((after.data() as { status: string }).status).toBe('New');
+  });
+
+  it('rejects status updates from unauthenticated clients', async () => {
+    const owner = env.authenticatedContext('user-1').firestore();
+    await assertSucceeds(setDoc(doc(owner, 'leads', 'RULES001'), validLead()));
+    const anon = env.unauthenticatedContext().firestore();
+    await assertFails(updateDoc(doc(anon, 'leads', 'RULES001'), { status: 'Converted' }));
+    // the document is untouched
+    const after = await getDoc(doc(owner, 'leads', 'RULES001'));
+    expect((after.data() as { status: string }).status).toBe('New');
+  });
+
+  it('keeps lead deletions disabled for clients', async () => {
+    const db = env.authenticatedContext('user-1').firestore();
+    await assertSucceeds(setDoc(doc(db, 'leads', 'RULES001'), validLead()));
     await assertFails(deleteDoc(doc(db, 'leads', 'RULES001')));
   });
 

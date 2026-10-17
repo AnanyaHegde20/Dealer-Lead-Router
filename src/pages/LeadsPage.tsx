@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { PageHeader } from '../components/PageHeader';
 import { UsersIcon } from '../components/icons';
+import { getLeadStore } from '../lib/leadData';
 import {
   DEFAULT_LEAD_QUERY,
   filterLeads,
@@ -16,17 +17,19 @@ import type { Lead, LeadStatus } from '../lib/types';
 interface LeadsPageProps {
   leads: Lead[];
   ready: boolean;
+  /** Bubbles up so Dashboard/Leads re-read the store after a status change. */
+  onLeadUpdated?: () => void;
 }
 
-const STATUS_CHIP: Record<LeadStatus, string> = {
-  New: 'bg-sky-50 text-sky-700 ring-sky-600/20',
-  Contacted: 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  Converted: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  Lost: 'bg-rose-50 text-rose-700 ring-rose-600/20',
-};
+/** The four statuses a lead may be moved to (matches firestore.rules). */
+const STATUS_OPTIONS: readonly LeadStatus[] = ['New', 'Contacted', 'Converted', 'Lost'];
 
 const SELECT_CLASSES =
   'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200';
+
+/** Compact variant for the per-row status dropdown. */
+const ROW_SELECT_CLASSES =
+  'w-32 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:opacity-60';
 
 /** Distinct dealer options actually present in the data, In-house included. */
 function dealerOptions(leads: Lead[]): Array<{ id: string; name: string }> {
@@ -44,15 +47,60 @@ function dealerOptions(leads: Lead[]): Array<{ id: string; name: string }> {
  * Leads table over the combined store: migrated legacy rows plus leads
  * submitted in this session, with search and status/dealer/origin filters.
  */
-export function LeadsPage({ leads, ready }: LeadsPageProps) {
+export function LeadsPage({ leads, ready, onLeadUpdated }: LeadsPageProps) {
   const [query, setQuery] = useState<LeadQuery>(DEFAULT_LEAD_QUERY);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  // Optimistic value shown while the save is in flight; dropped as soon as
+  // the refreshed store catches up (or immediately when the save fails).
+  const [pendingStatus, setPendingStatus] = useState<Map<string, LeadStatus>>(new Map());
 
   const options = useMemo(() => dealerOptions(leads), [leads]);
   const visible = useMemo(() => filterLeads(leads, query), [leads, query]);
   const sessionCount = leads.filter((lead) => lead.origin === 'session').length;
 
+  useEffect(() => {
+    setPendingStatus((previous) => {
+      if (previous.size === 0) return previous;
+      const next = new Map(previous);
+      let settled = false;
+      for (const [id, status] of previous) {
+        if (leads.find((lead) => lead.lead_id === id)?.status === status) {
+          next.delete(id);
+          settled = true;
+        }
+      }
+      return settled ? next : previous;
+    });
+  }, [leads]);
+
   function update<K extends keyof LeadQuery>(key: K, value: LeadQuery[K]) {
     setQuery((previous) => ({ ...previous, [key]: value }));
+  }
+
+  async function changeStatus(lead: Lead, status: LeadStatus) {
+    if (status === lead.status) return;
+    setSavingId(lead.lead_id);
+    setStatusError(null);
+    setPendingStatus((previous) => new Map(previous).set(lead.lead_id, status));
+    try {
+      await getLeadStore().updateLeadStatus(lead.lead_id, status);
+      onLeadUpdated?.(); // Dashboard counts + filters re-read the store
+    } catch (error) {
+      console.error('[LeadsPage] status update failed', error);
+      setPendingStatus((previous) => {
+        const next = new Map(previous);
+        next.delete(lead.lead_id); // revert the optimistic value
+        return next;
+      });
+      setStatusError(
+        `Could not update status for ${lead.lead_id}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
+    } finally {
+      setSavingId(null);
+    }
   }
 
   if (!ready) {
@@ -184,6 +232,15 @@ export function LeadsPage({ leads, ready }: LeadsPageProps) {
         </p>
       </section>
 
+      {statusError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {statusError}
+        </p>
+      ) : null}
+
       {visible.length === 0 ? (
         <EmptyState
           icon={<UsersIcon className="h-6 w-6" />}
@@ -217,11 +274,26 @@ export function LeadsPage({ leads, ready }: LeadsPageProps) {
                     <td className="hidden px-4 py-3 text-slate-600 md:table-cell">{lead.product}</td>
                     <td className="hidden px-4 py-3 text-slate-600 lg:table-cell">{lead.source}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_CHIP[lead.status]}`}
+                      <select
+                        className={ROW_SELECT_CLASSES}
+                        value={pendingStatus.get(lead.lead_id) ?? lead.status}
+                        disabled={savingId !== null}
+                        aria-label={`Status for lead ${lead.lead_id}`}
+                        onChange={(event) => {
+                          void changeStatus(lead, event.target.value as LeadStatus);
+                        }}
                       >
-                        {lead.status}
-                      </span>
+                        {STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                      {savingId === lead.lead_id ? (
+                        <span role="status" className="mt-1 block text-[11px] text-slate-400">
+                          Saving…
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       {lead.dealer_id ? (

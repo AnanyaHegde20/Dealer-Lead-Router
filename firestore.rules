@@ -9,8 +9,10 @@ rules_version = '2';
 //  * The dealer assignment is RECOMPUTED from the pincode inside the rules,
 //    so a client cannot claim a dealer it was not routed to (and cannot send
 //    itself to In-house Sales while naming a real dealer, or vice versa).
-//  * Leads are immutable from the client (no update/delete). Status changes
-//    need a validated update path in a later phase.
+//  * The only client-side update is a status change: signed-in users may
+//    flip `status` (New/Contacted/Converted/Lost) and nothing else. The
+//    rules diff the before/after documents to prove no other field moved,
+//    and deletes stay disabled.
 //  * phoneIndex/{phone} documents enforce one lead per mobile number:
 //    they can be created once and never changed, giving the database a
 //    uniqueness check that does not depend on client-side queries.
@@ -110,8 +112,17 @@ service cloud.firestore {
         && validLeadWrite()
         && request.resource.data.lead_id == leadId;
 
-      // No client-side updates or deletions in this phase.
-      allow update, delete: if false;
+      // Status changes — the ONLY client-side update. Exactly one field
+      // (`status`) may change, and only to one of the four known values;
+      // a write that also touches phone, dealer, identity or any other
+      // column is rejected by the diff() check below. Deletes stay off.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status is string
+        && request.resource.data.status in ['New', 'Contacted', 'Converted', 'Lost'];
+
+      // Deletions are never allowed for clients.
+      allow delete: if false;
     }
 
     match /phoneIndex/{phone} {

@@ -6,7 +6,7 @@
  *   - Cloud Firestore (configured): see firestoreRepository.ts
  * The form and its duplicate check only ever talk to this interface.
  */
-import type { Lead } from './types';
+import type { Lead, LeadStatus } from './types';
 
 export interface LeadRepository {
   /** All stored leads. */
@@ -15,6 +15,8 @@ export interface LeadRepository {
   findByMobile(phone: string): Promise<Lead | null>;
   /** Persist a new lead. */
   create(lead: Lead): Promise<void>;
+  /** Change the status of an existing lead — the only editable field. */
+  updateLeadStatus(id: string, status: LeadStatus): Promise<void>;
 }
 
 /**
@@ -53,6 +55,11 @@ export function createMemoryLeadRepository(seed: Lead[] = []): LeadRepository {
     },
     async create(lead: Lead) {
       rows.push({ ...lead });
+    },
+    async updateLeadStatus(id: string, status: LeadStatus) {
+      const row = rows.find((lead) => lead.lead_id === id);
+      if (!row) throw new Error(`Lead ${id} not found`);
+      row.status = status;
     },
   };
 }

@@ -224,6 +224,9 @@ describe('repository swap', () => {
       async create(lead) {
         seen.push(`${lead.lead_id}:${lead.phone}`);
       },
+      async updateLeadStatus() {
+        throw new Error('not used by the form');
+      },
     };
     setLeadRepository(fakeFirestore);
     const result = await submitLeadForm(validLead, getLeadRepository());

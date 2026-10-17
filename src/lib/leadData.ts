@@ -43,6 +43,21 @@ export function loadMigratedLeads(text: string = cleanedLeadsCsv): Lead[] {
 
 const MIGRATED_LEADS: Lead[] = loadMigratedLeads();
 
+/**
+ * Tab-session status overrides for MIGRATED leads (local mode).
+ *
+ * The bundled rows stay untouched (the CSV is read-only), so a status
+ * change to a migrated lead is remembered here instead — module-level so
+ * every fresh store instance (getLocalLeadStore() builds one per call)
+ * sees it, exactly like session memory. Cleared on page refresh.
+ */
+const MIGRATED_STATUS_OVERRIDES = new Map<string, LeadStatus>();
+
+/** Drop local-mode migrated status overrides (test helper). */
+export function resetLeadStatusOverrides(): void {
+  MIGRATED_STATUS_OVERRIDES.clear();
+}
+
 /** The immutable migrated dataset (31 cleaned legacy leads). */
 export function getMigratedLeads(): Lead[] {
   return MIGRATED_LEADS;
@@ -52,11 +67,19 @@ export function getMigratedLeads(): Lead[] {
  * Combined repository: migrated leads first, then session leads.
  * Duplicate lookup checks migrated rows before session rows.
  * `create` delegates to the session repository only.
+ * `updateLeadStatus` writes to the session repository (or the override
+ * map when the target is a migrated row, keeping the CSV read-only).
  */
 export function createLeadStore(session: LeadRepository): LeadRepository {
   return {
     async list() {
-      return [...MIGRATED_LEADS, ...(await session.list())];
+      return [
+        ...MIGRATED_LEADS.map((lead) => {
+          const status = MIGRATED_STATUS_OVERRIDES.get(lead.lead_id);
+          return status && status !== lead.status ? { ...lead, status } : lead;
+        }),
+        ...(await session.list()),
+      ];
     },
     async findByMobile(phone: string) {
       return (
@@ -66,6 +89,13 @@ export function createLeadStore(session: LeadRepository): LeadRepository {
     },
     async create(lead: Lead) {
       await session.create({ ...lead, origin: 'session' });
+    },
+    async updateLeadStatus(id: string, status: LeadStatus) {
+      if (MIGRATED_LEADS.some((lead) => lead.lead_id === id)) {
+        MIGRATED_STATUS_OVERRIDES.set(id, status);
+        return;
+      }
+      await session.updateLeadStatus(id, status);
     },
   };
 }

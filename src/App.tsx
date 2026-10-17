@@ -70,7 +70,9 @@ export default function App() {
         <main className="min-w-0 flex-1">
           <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
             {page === 'dashboard' ? <DashboardPage leads={leads} ready={ready} /> : null}
-            {page === 'leads' ? <LeadsPage leads={leads} ready={ready} /> : null}
+            {page === 'leads' ? (
+              <LeadsPage leads={leads} ready={ready} onLeadUpdated={refreshLeads} />
+            ) : null}
             {page === 'add-lead' ? <AddLeadPage onLeadSaved={refreshLeads} /> : null}
           </div>
         </main>

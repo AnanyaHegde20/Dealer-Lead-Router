@@ -24,6 +24,7 @@ import {
   getDoc,
   getDocs,
   runTransaction,
+  updateDoc,
   type Firestore,
 } from 'firebase/firestore';
 import { getFirebaseDb } from './firebase';
@@ -168,6 +169,15 @@ export function createFirestoreRepository(db: Firestore = getFirebaseDb()): Lead
         }
         throw error;
       }
+    },
+
+    async updateLeadStatus(id: string, status: LeadStatus): Promise<void> {
+      // Defense in depth: the rules validate this too, but fail fast here
+      // with a clear message instead of a permission error.
+      if (!LEAD_STATUSES.includes(status)) {
+        throw new Error(`Invalid lead status: ${String(status)}`);
+      }
+      await updateDoc(doc(db, 'leads', id), { status });
     },
   };
 }

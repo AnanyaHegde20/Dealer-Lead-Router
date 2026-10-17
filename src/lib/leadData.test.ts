@@ -9,6 +9,7 @@ import {
   getLocalLeadStore,
   getMigratedLeads,
   loadMigratedLeads,
+  resetLeadStatusOverrides,
 } from './leadData';
 import { submitLeadForm, type LeadFormValues } from './leadForm';
 import {
@@ -27,6 +28,7 @@ const newLead: LeadFormValues = {
 
 beforeEach(() => {
   resetLeadRepository();
+  resetLeadStatusOverrides();
 });
 
 describe('migrated legacy data', () => {
@@ -140,5 +142,61 @@ describe('combined store (migrated + session)', () => {
       true,
     );
     resetLeadRepository();
+  });
+});
+
+describe('status updates through the combined store (local mode)', () => {
+  it('updates a session lead status in the session layer', async () => {
+    const session = createMemoryLeadRepository();
+    const store = createLeadStore(session);
+    expect((await submitLeadForm(newLead, store)).ok).toBe(true);
+
+    const created = (await store.list()).find((lead) => lead.phone === '9123456789');
+    expect(created?.status).toBe('New');
+
+    await store.updateLeadStatus(created!.lead_id, 'Lost');
+    expect(
+      (await store.list()).find((lead) => lead.lead_id === created!.lead_id)?.status,
+    ).toBe('Lost');
+    expect((await session.list())[0]?.status).toBe('Lost');
+  });
+
+  it('updates a migrated lead without mutating the bundled CSV rows', async () => {
+    const store = createLeadStore(createMemoryLeadRepository());
+    expect(
+      (await store.list()).find((lead) => lead.lead_id === 'L1001')?.status,
+    ).toBe('New');
+
+    await store.updateLeadStatus('L1001', 'Converted');
+
+    // the read-only source data is untouched…
+    expect(getMigratedLeads().find((lead) => lead.lead_id === 'L1001')?.status).toBe('New');
+    // …while the store (and every fresh instance of it) serves the new value
+    expect(
+      (await store.list()).find((lead) => lead.lead_id === 'L1001')?.status,
+    ).toBe('Converted');
+    expect(
+      (await getLocalLeadStore().list()).find((lead) => lead.lead_id === 'L1001')?.status,
+    ).toBe('Converted');
+  });
+
+  it('keeps every other migrated status unchanged after one update', async () => {
+    const store = createLeadStore(createMemoryLeadRepository());
+    const before = await store.list();
+    await store.updateLeadStatus('L1001', 'Lost');
+    const after = await store.list();
+
+    expect(after).toHaveLength(before.length);
+    expect(after.find((lead) => lead.lead_id === 'L1001')?.status).toBe('Lost');
+    expect(before.find((lead) => lead.lead_id === 'L1001')?.status).toBe('New');
+    for (const row of after) {
+      if (row.lead_id === 'L1001') continue;
+      expect(row.status).toBe(before.find((entry) => entry.lead_id === row.lead_id)?.status);
+    }
+  });
+
+  it('rejects an unknown lead id', async () => {
+    const store = createLeadStore(createMemoryLeadRepository());
+    await expect(store.updateLeadStatus('NOPE-01', 'Lost')).rejects.toThrow(/not found/);
   });
 });
