@@ -94,7 +94,7 @@ export function Navigation({ active, onNavigate, userEmail = null, onSignOut }: 
         ) : null}
       </aside>
 
-      <header className="sticky top-0 z-20 bg-slate-900 pt-[env(safe-area-inset-top)] lg:hidden">
+      <header className="w-full sticky top-0 z-20 bg-slate-900 pt-[env(safe-area-inset-top)] lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Brand />
           {userEmail ? (

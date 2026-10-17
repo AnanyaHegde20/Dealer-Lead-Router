@@ -117,3 +117,34 @@ describe('no fixed widths that overflow small screens', () => {
     }
   });
 });
+
+/**
+ * Regression for the screenshot bug: a permanent `flex` row on the shell
+ * container made the dark mobile <header> an auto-width flex item (~300px
+ * max-content) beside <main class="flex-1"> (basis 0), squeezing content
+ * into a 30–90px column below lg. The shell must be block flow below lg
+ * and only become a flex row for the sidebar at lg+.
+ */
+describe('mobile shell — no permanent sidebar column', () => {
+  const app = read('src/App.tsx');
+  const nav = read('src/components/Navigation.tsx');
+
+  it('uses block flow below lg; the flex row exists only at lg+', () => {
+    expect(app).toContain('mx-auto min-h-screen max-w-7xl lg:flex');
+    expect(app).not.toContain('mx-auto flex'); // the regression: a bare flex row
+  });
+
+  it('gives main the full viewport width on mobile', () => {
+    expect(app).toContain('className="w-full min-w-0 flex-1 pb-[env(safe-area-inset-bottom)]"');
+  });
+
+  it('keeps the mobile header a full-width block and the sidebar lg-only', () => {
+    expect(nav).toMatch(/className="w-full sticky top-0[^"]*lg:hidden"/);
+    expect(nav).toMatch(/className="sticky top-0 hidden h-screen w-64[^"]*lg:flex"/);
+  });
+
+  it('stacks dashboard cards full-width on phones, two columns from sm', () => {
+    const dashboard = read('src/pages/DashboardPage.tsx');
+    expect(dashboard).toContain('grid-cols-1 gap-4 sm:grid-cols-2');
+  });
+});

@@ -60,14 +60,18 @@ export default function App() {
           nothing is stored in the cloud. See FIREBASE_SETUP.md.
         </div>
       ) : null}
-      <div className="mx-auto flex min-h-screen max-w-7xl">
+      {/* Below lg the container is normal block flow: the mobile header and
+          main stack vertically at full width. From lg up it becomes the
+          sidebar row. A permanent flex row here is what previously squeezed
+          main into a narrow strip beside the auto-width header. */}
+      <div className="mx-auto min-h-screen max-w-7xl lg:flex">
         <Navigation
           active={page}
           onNavigate={setPage}
           userEmail={user?.email ?? null}
           onSignOut={configured ? handleSignOut : undefined}
         />
-        <main className="min-w-0 flex-1 pb-[env(safe-area-inset-bottom)]">
+        <main className="w-full min-w-0 flex-1 pb-[env(safe-area-inset-bottom)]">
           <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
             {page === 'dashboard' ? <DashboardPage leads={leads} ready={ready} /> : null}
             {page === 'leads' ? (
