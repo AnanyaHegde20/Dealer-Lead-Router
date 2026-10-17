@@ -14,3 +14,7 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 .firebase/
+
+# Service-account keys (Firebase Admin) - never commit
+serviceAccount*.json
+*firebase-adminsdk*.json

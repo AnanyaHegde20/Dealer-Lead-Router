@@ -1,9 +1,11 @@
 # AI Log — PURE Energy · Dealer Lead Router
 
 This file documents how AI assistance was used while building this project.
-It describes categories of work rather than reproducing literal prompts, and
-it deliberately contains no dates or results that cannot be verified from
-the repository itself.
+Where prompts are quoted, each is marked **[exact]** (wording preserved from
+the session) or **[faithful paraphrase]** (instructions restated; the
+original chat wording was not kept). No events or results appear here
+unless they can be verified against the repository or the session's actual
+development history.
 
 ## Tool
 
@@ -38,6 +40,72 @@ the repository itself.
 - **Documentation.** Drafted `FIREBASE_SETUP.md`, this `AI_LOG.md`,
   `README.md`, and `NOTE.md`, plus inline code comments, all of which were
   left for the developer to review before inclusion.
+
+## Three most useful prompts
+
+1. **[faithful paraphrase] The Phase 1 cleaning brief** — *"Build a Python
+   script that cleans `data/legacy_leads.csv` strictly read-only (never
+   touch the source CSVs), emits `data-out/cleaned_leads.csv` plus
+   `reports/reconciliation.csv` with exactly the columns
+   `lead_id,action,reason` — one row per input row, actions limited to
+   imported/fixed/merged/rejected/assigned_inhouse — and write unit tests
+   for every rule; run them before reporting done."*
+   Useful because it pinned the contract that Part B is graded on; the
+   resulting script, report and 45-test suite are still the foundation
+   everything else runs on.
+2. **[faithful paraphrase] The production bug report** — *"The deployed app
+   shows `FirebaseError: Missing or insufficient permissions` from
+   `firestore.rules:105` on `'list'` when it loads — find the root cause
+   and fix it without weakening the rules."* (Error text is as captured
+   from the browser console.)
+   Useful because it forced a real diagnosis instead of a guess: the fix
+   was gating the data fetch on the auth state (`App.tsx`), not changing
+   permissions, and it produced a regression test
+   (`authGate.emulator.test.ts`) that reproduces the incident.
+3. **[exact] The status-feature specification** —
+   *"Fix the missing lead-status update feature in my Dealer Lead Router
+   project."* followed by seven numbered requirements (repository-level
+   `updateLeadStatus`, four-option dropdown, loading/error/refresh
+   behaviour, status-only security rules, five test categories, README
+   cleanup, run all suites, do not commit or push).
+   Useful because the numbered acceptance criteria removed all ambiguity —
+   the feature shipped exactly to spec with rules, tests and docs in one
+   pass.
+
+## Where AI was wrong and how it was corrected
+
+1. **Missed a Part A requirement and rationalized it as an assumption.**
+   The brief requires "status changeable (New / Contacted / Converted /
+   Lost)", but the AI built the app with no update path at all — committed
+   rules say `allow update, delete: if false` (see `git show
+   f9938b4:firestore.rules`) — and when the developer asked *"...is that
+   all done?"* against the pasted full brief, the audit exposed it. The AI
+   had even written the gap into the README as policy: *"status changes
+   assume an admin/trusted path outside the current UI"* (introduced in
+   commit `f5331a9`, since corrected).
+   **Correction:** implemented the feature end to end — `updateLeadStatus`
+   in all three repository layers, the Leads-page dropdown with
+   saving/error states, a `diff()`-based status-only rule, and the five
+   test categories — and rewrote both outdated README statements.
+2. **Guessed the `submission.json` schema instead of asking.**
+   With no brief in the repository, the AI invented a plausible format
+   (`projectName`, `location`, `deploymentUrl`, `repositoryUrl`,
+   `description` — preserved in `git show f9938b4:submission.json`). The
+   real required schema is `name`, `email`, `phone`, `live_url`,
+   `video_url`.
+   **Correction:** once the developer supplied the submission section, the
+   file was rewritten to the exact required keys using only verified
+   details, and the README's line-1/assumptions requirements were audited
+   against the real brief.
+3. **Wrong test assertion about the new security rules.**
+   The AI asserted that `updateDoc({ status: 'Converted', origin: 'cloud' })`
+   must be rejected — it succeeded, failing the emulator run. The AI had
+   misunderstood `request.resource.data.diff(resource.data).affectedKeys()`:
+   it lists only fields whose *values actually change*, and `origin` was
+   already `'cloud'`, so only `status` moved and the write was legitimate.
+   **Correction:** the test now changes `origin` to `'migrated'` (a real
+   second-field change) in `securityRules.emulator.test.ts`, and the full
+   emulator suite passes — the rules were right, the test was wrong.
 
 ## What the AI did not do
 
