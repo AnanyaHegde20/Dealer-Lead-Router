@@ -25,11 +25,11 @@ interface LeadsPageProps {
 const STATUS_OPTIONS: readonly LeadStatus[] = ['New', 'Contacted', 'Converted', 'Lost'];
 
 const SELECT_CLASSES =
-  'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200';
+  'min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200';
 
-/** Compact variant for the per-row status dropdown. */
+/** Compact variant for the per-row status dropdown (44px touch target). */
 const ROW_SELECT_CLASSES =
-  'w-32 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:opacity-60';
+  'w-full min-h-11 rounded-lg border border-slate-300 bg-white px-2.5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-36';
 
 /** Distinct dealer options actually present in the data, In-house included. */
 function dealerOptions(leads: Lead[]): Array<{ id: string; name: string }> {
@@ -103,6 +103,58 @@ export function LeadsPage({ leads, ready, onLeadUpdated }: LeadsPageProps) {
     }
   }
 
+  /** Status dropdown + inline saving note — shared by the table and mobile cards. */
+  function statusSelect(lead: Lead) {
+    return (
+      <>
+        <select
+          className={ROW_SELECT_CLASSES}
+          value={pendingStatus.get(lead.lead_id) ?? lead.status}
+          disabled={savingId !== null}
+          aria-label={`Status for lead ${lead.lead_id}`}
+          onChange={(event) => {
+            void changeStatus(lead, event.target.value as LeadStatus);
+          }}
+        >
+          {STATUS_OPTIONS.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+        {savingId === lead.lead_id ? (
+          <span role="status" className="mt-1 block text-[11px] text-slate-400">
+            Saving…
+          </span>
+        ) : null}
+      </>
+    );
+  }
+
+  /** Record provenance chip — identical in the table row and the mobile card. */
+  function originChip(lead: Lead) {
+    return (
+      <span
+        title={
+          lead.origin === 'session'
+            ? 'Submitted in this tab — temporary memory only'
+            : lead.origin === 'cloud'
+              ? 'Stored in Cloud Firestore'
+              : 'Migrated from data-out/cleaned_leads.csv'
+        }
+        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+          lead.origin === 'session'
+            ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20'
+            : lead.origin === 'cloud'
+              ? 'bg-teal-50 text-teal-700 ring-teal-600/20'
+              : 'bg-slate-100 text-slate-600 ring-slate-500/20'
+        }`}
+      >
+        {lead.origin === 'session' ? 'Session' : lead.origin === 'cloud' ? 'Cloud' : 'Migrated'}
+      </span>
+    );
+  }
+
   if (!ready) {
     return (
       <div className="space-y-6">
@@ -147,7 +199,7 @@ export function LeadsPage({ leads, ready, onLeadUpdated }: LeadsPageProps) {
               value={query.search}
               onChange={(event) => update('search', event.target.value)}
               placeholder="Name, mobile, lead id, pincode, product or dealer…"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
             />
           </div>
 
@@ -220,7 +272,7 @@ export function LeadsPage({ leads, ready, onLeadUpdated }: LeadsPageProps) {
             <button
               type="button"
               onClick={() => setQuery(DEFAULT_LEAD_QUERY)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              className="min-h-11 rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-200"
             >
               Clear filters
             </button>
@@ -248,7 +300,59 @@ export function LeadsPage({ leads, ready, onLeadUpdated }: LeadsPageProps) {
           description="Try a different search term, or clear the filters to see every lead again."
         />
       ) : (
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <>
+          {/* Phone layout: one card per lead — every table column preserved. */}
+          <section className="space-y-3 sm:hidden" aria-label="Leads list">
+            {visible.map((lead) => (
+              <article
+                key={`${lead.origin ?? 'migrated'}-${lead.lead_id}`}
+                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-slate-500">{lead.lead_id}</p>
+                    <p className="mt-0.5 truncate text-sm font-semibold text-slate-800">
+                      {lead.name}
+                    </p>
+                  </div>
+                  {originChip(lead)}
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                  <div>
+                    <dt className="text-slate-400">Mobile</dt>
+                    <dd className="font-mono text-slate-700">{lead.phone}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-400">Pincode</dt>
+                    <dd className="font-mono text-slate-700">{lead.pincode}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-400">Product</dt>
+                    <dd className="truncate text-slate-700">{lead.product}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-400">Source</dt>
+                    <dd className="truncate text-slate-700">{lead.source}</dd>
+                  </div>
+                </dl>
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <p className="text-xs text-slate-400">Dealer</p>
+                  <p
+                    className={`mt-0.5 text-sm ${
+                      lead.dealer_id ? 'text-slate-700' : 'font-medium text-amber-700'
+                    }`}
+                  >
+                    {lead.dealer_id ? `${lead.dealer_id} · ${lead.dealer_name}` : lead.dealer_name}
+                  </p>
+                  <p className="mt-3 text-xs text-slate-400">Status</p>
+                  <div className="mt-1">{statusSelect(lead)}</div>
+                </div>
+              </article>
+            ))}
+          </section>
+
+          {/* Tablet and up: the full table, scrolling inside its own container. */}
+          <section className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:block">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-100 text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -273,28 +377,7 @@ export function LeadsPage({ leads, ready, onLeadUpdated }: LeadsPageProps) {
                     <td className="px-4 py-3 font-mono text-xs text-slate-600">{lead.pincode}</td>
                     <td className="hidden px-4 py-3 text-slate-600 md:table-cell">{lead.product}</td>
                     <td className="hidden px-4 py-3 text-slate-600 lg:table-cell">{lead.source}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        className={ROW_SELECT_CLASSES}
-                        value={pendingStatus.get(lead.lead_id) ?? lead.status}
-                        disabled={savingId !== null}
-                        aria-label={`Status for lead ${lead.lead_id}`}
-                        onChange={(event) => {
-                          void changeStatus(lead, event.target.value as LeadStatus);
-                        }}
-                      >
-                        {STATUS_OPTIONS.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
-                      {savingId === lead.lead_id ? (
-                        <span role="status" className="mt-1 block text-[11px] text-slate-400">
-                          Saving…
-                        </span>
-                      ) : null}
-                    </td>
+                    <td className="px-4 py-3">{statusSelect(lead)}</td>
                     <td className="px-4 py-3">
                       {lead.dealer_id ? (
                         <span className="text-slate-700">
@@ -307,36 +390,14 @@ export function LeadsPage({ leads, ready, onLeadUpdated }: LeadsPageProps) {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        title={
-                          lead.origin === 'session'
-                            ? 'Submitted in this tab — temporary memory only'
-                            : lead.origin === 'cloud'
-                              ? 'Stored in Cloud Firestore'
-                              : 'Migrated from data-out/cleaned_leads.csv'
-                        }
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
-                          lead.origin === 'session'
-                            ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20'
-                            : lead.origin === 'cloud'
-                              ? 'bg-teal-50 text-teal-700 ring-teal-600/20'
-                              : 'bg-slate-100 text-slate-600 ring-slate-500/20'
-                        }`}
-                      >
-                        {lead.origin === 'session'
-                          ? 'Session'
-                          : lead.origin === 'cloud'
-                            ? 'Cloud'
-                            : 'Migrated'}
-                      </span>
-                    </td>
+                    <td className="px-4 py-3">{originChip(lead)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </section>
+          </section>
+        </>
       )}
     </div>
   );

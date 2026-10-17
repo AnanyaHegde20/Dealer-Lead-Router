@@ -42,12 +42,14 @@ function Brand() {
 function itemClasses(active: boolean, mobile: boolean): string {
   if (mobile) {
     return [
-      'flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition',
+      'flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-inset',
       active ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white',
     ].join(' ');
   }
   return [
-    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-4',
+    'flex w-full min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-4',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-inset',
     active
       ? 'border-emerald-500 bg-white/10 text-white'
       : 'border-transparent text-slate-300 hover:bg-white/5 hover:text-white',
@@ -84,7 +86,7 @@ export function Navigation({ active, onNavigate, userEmail = null, onSignOut }: 
             <button
               type="button"
               onClick={onSignOut}
-              className="mt-2 w-full rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="mt-2 min-h-11 w-full rounded-lg border border-slate-700 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
               Sign out
             </button>
@@ -92,23 +94,20 @@ export function Navigation({ active, onNavigate, userEmail = null, onSignOut }: 
         ) : null}
       </aside>
 
-      <header className="sticky top-0 z-20 bg-slate-900 lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-20 bg-slate-900 pt-[env(safe-area-inset-top)] lg:hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Brand />
           {userEmail ? (
             <button
               type="button"
               onClick={onSignOut}
-              className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="min-h-11 shrink-0 rounded-lg border border-slate-700 px-3.5 py-2 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
               Sign out
             </button>
           ) : null}
         </div>
-        <nav
-          className="flex gap-1 overflow-x-auto px-2 pb-2"
-          aria-label="Main"
-        >
+        <nav className="flex flex-wrap gap-1 px-2 pb-2" aria-label="Main">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}

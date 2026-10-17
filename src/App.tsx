@@ -67,7 +67,7 @@ export default function App() {
           userEmail={user?.email ?? null}
           onSignOut={configured ? handleSignOut : undefined}
         />
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 pb-[env(safe-area-inset-bottom)]">
           <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
             {page === 'dashboard' ? <DashboardPage leads={leads} ready={ready} /> : null}
             {page === 'leads' ? (

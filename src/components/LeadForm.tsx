@@ -23,7 +23,7 @@ interface LeadFormProps {
 type TouchedFields = Partial<Record<keyof LeadFormValues, boolean>>;
 
 const INPUT_BASE =
-  'w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-2';
+  'min-h-11 w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-2';
 
 function inputClasses(hasError: boolean): string {
   return hasError
@@ -282,7 +282,7 @@ export function LeadForm({ onSaved }: LeadFormProps) {
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <PlusIcon className="h-4 w-4" />
           {saving ? 'Saving…' : 'Save lead'}
