@@ -114,7 +114,7 @@ describe('submitLeadForm — valid submission', () => {
     expect(result.lead.status).toBe('New');
     expect(result.lead.name).toBe('Ganesh Patil');
     expect(result.lead.created_on).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result.lead.lead_id).toMatch(/^L/);
+    expect(result.lead.lead_id).toMatch(/^L\d{4,}$/);
 
     const stored = await getLeadRepository().list();
     expect(stored).toHaveLength(1);
@@ -223,6 +223,7 @@ describe('repository swap', () => {
       },
       async create(lead) {
         seen.push(`${lead.lead_id}:${lead.phone}`);
+        return { ...lead, lead_id: 'L1011' };
       },
       async updateLeadStatus() {
         throw new Error('not used by the form');
@@ -233,11 +234,76 @@ describe('repository swap', () => {
     expect(result.ok).toBe(true);
     expect(seen).toHaveLength(1);
     expect(seen[0]).toContain('9876543210');
+    // the form surfaces the id the repository actually stored
+    if (result.ok) expect(result.lead.lead_id).toBe('L1011');
     resetLeadRepository();
   });
 
   it('starts empty — no fabricated seed data', async () => {
     expect(await getLeadRepository().list()).toEqual([]);
     expect(EMPTY_LEAD_FORM.name).toBe('');
+  });
+});
+
+describe('submitLeadForm — ID format (business-facing L####)', () => {
+  it('produces sequential L1011, L1012, … ids across multiple creates', async () => {
+    const repository = getLeadRepository();
+    const first = await submitLeadForm(validLead, repository);
+    const second = await submitLeadForm({ ...validLead, phone: '9876543211' }, repository);
+    const third = await submitLeadForm({ ...validLead, phone: '9876543212' }, repository);
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    expect(third.ok).toBe(true);
+    if (!(first.ok && second.ok && third.ok)) return;
+    expect(first.lead.lead_id).toBe('L1011');
+    expect(second.lead.lead_id).toBe('L1012');
+    expect(third.lead.lead_id).toBe('L1013');
+    const stored = await repository.list();
+    expect(stored.map((row) => row.lead_id)).toEqual(['L1011', 'L1012', 'L1013']);
+  });
+
+  it('reuses the L#### format and never fabricates random string ids', async () => {
+    const result = await submitLeadForm(validLead, getLeadRepository());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.lead.lead_id).toMatch(/^L\d{4,}$/);
+  });
+
+  it('fails fast and throws when the repository create rejects with an unexpected error', async () => {
+    const failingRepo: LeadRepository = {
+      async list() {
+        return [];
+      },
+      async findByMobile() {
+        return null;
+      },
+      async create() {
+        throw new Error('Database write permission denied');
+      },
+      async updateLeadStatus() {},
+    };
+
+    await expect(submitLeadForm(validLead, failingRepo)).rejects.toThrow(
+      'Database write permission denied',
+    );
+  });
+
+  it('rejects if the repository fails to return a valid lead_id', async () => {
+    const invalidRepo: LeadRepository = {
+      async list() {
+        return [];
+      },
+      async findByMobile() {
+        return null;
+      },
+      async create(lead) {
+        return { ...lead, lead_id: '' };
+      },
+      async updateLeadStatus() {},
+    };
+
+    await expect(submitLeadForm(validLead, invalidRepo)).rejects.toThrow(
+      'Repository failed to assign a unique lead ID',
+    );
   });
 });

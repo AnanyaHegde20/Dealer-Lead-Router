@@ -14,9 +14,13 @@
  *   conditions. That is what lets us claim DB-enforced uniqueness for
  *   cloud mode (the security rules make the index append-only too).
  *
- * New leads receive a Firestore auto-id as their lead_id (document id ==
- * lead_id field, required by firestore.rules). The migration script uses
- * the stable legacy ids (L1001…) as document ids.
+ * Lead ids: new leads receive a business-facing L#### id (L1011… or
+ * continuing after migrated legacy ids like L1035). The candidate sequence
+ * starts past existing ids in the collection, and the transaction reserves
+ * doc(db, 'leads', leadId) under transaction isolation: concurrent creates
+ * that propose the same id abort-and-retry, allocating consecutive unique
+ * ids without needing an external counters collection. Document id ==
+ * lead_id field (required by firestore.rules).
  */
 import {
   collection,
@@ -28,6 +32,7 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 import { getFirebaseDb } from './firebase';
+import { formatLeadId, nextLeadNumberFromIds } from './leadId';
 import { DuplicateMobileError, type LeadRepository } from './leadRepository';
 import type { Lead, LeadStatus } from './types';
 
@@ -138,26 +143,51 @@ export function createFirestoreRepository(db: Firestore = getFirebaseDb()): Lead
       return leadSnap.exists() ? docToLead(leadSnap.id, leadSnap.data()) : null;
     },
 
-    async create(lead: Lead): Promise<void> {
-      const leadRef = doc(collection(db, 'leads'));
-      const document = leadToDoc({ ...lead, lead_id: leadRef.id, origin: 'cloud' });
-      const indexRef = doc(db, 'phoneIndex', document.phone);
+    async create(lead: Lead): Promise<Lead> {
+      const indexRef = doc(db, 'phoneIndex', lead.phone);
 
+      // Seed from existing leads: start after the highest business-facing L#### id
+      // currently present in the database (e.g. continuing after migrated L1001…L1035).
+      const existing = await getDocs(collection(db, 'leads'));
+      const seed = nextLeadNumberFromIds(existing.docs.map((entry) => entry.id));
+
+      let persisted: Lead | null = null;
       try {
-        await runTransaction(db, async (transaction) => {
-          const [indexSnap, leadSnap] = [
-            await transaction.get(indexRef),
-            await transaction.get(leadRef),
-          ];
+        persisted = await runTransaction(db, async (transaction) => {
+          const indexSnap = await transaction.get(indexRef);
           if (indexSnap.exists()) {
             const holder = String((indexSnap.data() as { lead_id?: unknown }).lead_id ?? '');
-            throw new DuplicateMobileError(document.phone, holder);
+            throw new DuplicateMobileError(lead.phone, holder);
           }
-          if (leadSnap.exists()) {
-            throw new Error(`Lead id ${leadRef.id} already exists`);
+
+          let allocated = seed;
+
+          // Pick the first free L#### id inside the transaction.
+          // By reading doc(db, 'leads', leadId), Firestore transaction isolation
+          // guarantees that if two clients concurrently propose the same candidate ID,
+          // one commits and the other is automatically aborted and retried by Firestore,
+          // which then sees the newly created document and increments to the next ID.
+          // This provides race-safe sequential allocation using only the permitted
+          // leads and phoneIndex collections, preserving least-privilege security rules.
+          let document: LeadDoc | null = null;
+          let leadRef = doc(db, 'leads', formatLeadId(allocated));
+          for (let attempt = 0; attempt < 100 && !document; attempt += 1) {
+            const leadId = formatLeadId(allocated);
+            leadRef = doc(db, 'leads', leadId);
+            const leadSnap = await transaction.get(leadRef);
+            if (leadSnap.exists()) {
+              allocated += 1;
+            } else {
+              document = leadToDoc({ ...lead, lead_id: leadId, origin: 'cloud' });
+            }
           }
+          if (!document) {
+            throw new Error('Could not allocate a free lead id');
+          }
+
           transaction.set(indexRef, { phone: document.phone, lead_id: document.lead_id });
           transaction.set(leadRef, document);
+          return docToLead(document.lead_id, document);
         });
       } catch (error) {
         if (error instanceof DuplicateMobileError) throw error;
@@ -165,10 +195,14 @@ export function createFirestoreRepository(db: Firestore = getFirebaseDb()): Lead
         // treat a lost race on the index the same way as a duplicate.
         const code = (error as { code?: string }).code ?? '';
         if (code === 'failed-precondition' || code === 'aborted') {
-          throw new DuplicateMobileError(document.phone);
+          throw new DuplicateMobileError(lead.phone);
         }
         throw error;
       }
+      if (!persisted) {
+        throw new Error('Lead create transaction completed without a document');
+      }
+      return persisted;
     },
 
     async updateLeadStatus(id: string, status: LeadStatus): Promise<void> {

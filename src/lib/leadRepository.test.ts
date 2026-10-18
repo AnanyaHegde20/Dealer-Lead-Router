@@ -31,6 +31,54 @@ beforeEach(() => {
   resetLeadRepository();
 });
 
+describe('createMemoryLeadRepository.create — business-facing L#### ids', () => {
+  it('allocates L1040 as the first id on an empty repository', async () => {
+    const repository = createMemoryLeadRepository();
+    const saved = await repository.create(buildLead('', '9000000010'));
+    expect(saved.lead_id).toBe('L1040');
+    expect((await repository.list())[0].lead_id).toBe('L1040');
+  });
+
+  it('increments sequentially: L1040, L1041, L1042', async () => {
+    const repository = createMemoryLeadRepository();
+    const ids: string[] = [];
+    for (const phone of ['9000000011', '9000000012', '9000000013']) {
+      const saved = await repository.create(buildLead('', phone));
+      ids.push(saved.lead_id);
+    }
+    expect(ids).toEqual(['L1040', 'L1041', 'L1042']);
+  });
+
+  it('continues after seeded legacy ids without duplicating them', async () => {
+    const repository = createMemoryLeadRepository([
+      buildLead('L1001', '9000000021'),
+      buildLead('L1039', '9000000022'),
+    ]);
+    const saved = await repository.create(buildLead('', '9000000023'));
+    expect(saved.lead_id).toBe('L1040');
+  });
+
+  it('never re-issues a taken id even when the caller proposes one', async () => {
+    const repository = createMemoryLeadRepository([buildLead('L1040', '9000000031')]);
+    const saved = await repository.create(buildLead('L1040', '9000000032'));
+    expect(saved.lead_id).toBe('L1041');
+    const ids = (await repository.list()).map((row) => row.lead_id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('ignores random non-L#### provisional ids from older callers', async () => {
+    const repository = createMemoryLeadRepository();
+    const saved = await repository.create(buildLead('xox76PqfHPGD1QoAYMbW', '9000000041'));
+    expect(saved.lead_id).toBe('L1040');
+  });
+
+  it('returns the stored lead (id + payload) so callers can display it', async () => {
+    const repository = createMemoryLeadRepository();
+    const saved = await repository.create(buildLead('', '9000000051'));
+    expect(saved).toMatchObject({ lead_id: 'L1040', phone: '9000000051', status: 'New' });
+  });
+});
+
 describe('createMemoryLeadRepository.updateLeadStatus', () => {
   it('changes the status of the matching lead', async () => {
     const repository = createMemoryLeadRepository([buildLead('MEM00001', '9000000001')]);

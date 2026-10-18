@@ -94,11 +94,14 @@ describe('combined store (migrated + session)', () => {
 
     const result = await submitLeadForm(newLead, store);
     expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.lead.lead_id).toMatch(/^L\d{4,}$/);
 
     const all = await store.list();
     expect(all).toHaveLength(32);
     expect(await session.list()).toHaveLength(1);
     expect(all.filter((lead) => lead.origin === 'session')).toHaveLength(1);
+    expect(all.some((lead) => lead.lead_id === result.lead.lead_id && lead.origin === 'session')).toBe(true);
   });
 
   it('blocks a submission that duplicates a migrated mobile', async () => {
@@ -135,12 +138,15 @@ describe('combined store (migrated + session)', () => {
 
     const result = await submitLeadForm(newLead, store);
     expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.lead.lead_id).toMatch(/^L\d{4,}$/);
     const after = await store.list();
 
     expect(after.length).toBe(before.length + 1);
     expect(after.some((lead) => lead.phone === '9123456789' && lead.origin === 'session')).toBe(
       true,
     );
+    expect(after.some((lead) => lead.lead_id === result.lead.lead_id)).toBe(true);
     resetLeadRepository();
   });
 });

@@ -100,6 +100,7 @@ export function LeadForm({ onSaved }: LeadFormProps) {
   const [touched, setTouched] = useState<TouchedFields>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [remoteErrors, setRemoteErrors] = useState<LeadFormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedLead, setSavedLead] = useState<Lead | null>(null);
 
@@ -119,12 +120,14 @@ export function LeadForm({ onSaved }: LeadFormProps) {
       field === 'pincode' ? rawValue.replace(/\D/g, '').slice(0, 6) : rawValue;
     setValues((prev) => ({ ...prev, [field]: value }) as LeadFormValues);
     setRemoteErrors({});
+    setSubmitError(null);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitAttempted(true);
     setSaving(true);
+    setSubmitError(null);
     try {
       const result = await submitLeadForm(values, getLeadStore());
       if (!result.ok) {
@@ -138,6 +141,12 @@ export function LeadForm({ onSaved }: LeadFormProps) {
       setTouched({});
       setSubmitAttempted(false);
       onSaved?.(result.lead);
+    } catch (error) {
+      console.error('[LeadForm] save failed', error);
+      setSavedLead(null);
+      setSubmitError(
+        error instanceof Error ? error.message : 'Failed to save lead. Please try again.',
+      );
     } finally {
       setSaving(false);
     }
@@ -149,6 +158,15 @@ export function LeadForm({ onSaved }: LeadFormProps) {
       noValidate
       className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
     >
+      {submitError ? (
+        <div
+          role="alert"
+          className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        >
+          {submitError}
+        </div>
+      ) : null}
+
       {savedLead ? (
         <div
           role="status"

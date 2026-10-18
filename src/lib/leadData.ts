@@ -16,6 +16,7 @@ import cleanedLeadsCsv from '../../data-out/cleaned_leads.csv?raw';
 import { csvToObjects } from './csv';
 import { isFirebaseConfigured } from './firebase';
 import { createFirestoreRepository } from './firestoreRepository';
+import { formatLeadId, nextLeadNumberFromIds } from './leadId';
 import { getLeadRepository, type LeadRepository } from './leadRepository';
 import type { Lead, LeadStatus } from './types';
 
@@ -88,7 +89,18 @@ export function createLeadStore(session: LeadRepository): LeadRepository {
       );
     },
     async create(lead: Lead) {
-      await session.create({ ...lead, origin: 'session' });
+      // Local-mode id allocation: continue the L#### sequence past both
+      // the migrated CSV leads (L1001…L1035) and any session leads, so a
+      // new lead never reuses an existing business-facing id. The session
+      // repository keeps the id when it is free (its own rows only).
+      const existing = await session.list();
+      const taken = new Set<string>([
+        ...MIGRATED_LEADS.map((row) => row.lead_id),
+        ...existing.map((row) => row.lead_id),
+      ]);
+      const reusable = /^L\d+$/.test(lead.lead_id) && !taken.has(lead.lead_id);
+      const leadId = reusable ? lead.lead_id : formatLeadId(nextLeadNumberFromIds(taken));
+      return session.create({ ...lead, lead_id: leadId, origin: 'session' });
     },
     async updateLeadStatus(id: string, status: LeadStatus) {
       if (MIGRATED_LEADS.some((lead) => lead.lead_id === id)) {

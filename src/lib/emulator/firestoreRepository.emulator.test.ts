@@ -15,9 +15,17 @@ import {
   signOut as firebaseSignOut,
   type Auth,
 } from 'firebase/auth';
-import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
+import {
+  connectFirestoreEmulator,
+  doc,
+  getDoc,
+  getFirestore,
+  setDoc,
+  type Firestore,
+} from 'firebase/firestore';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createFirestoreRepository } from '../firestoreRepository';
+import { nextLeadNumberFromIds } from '../leadId';
 import { assignDealer } from '../assignDealer';
 import { DuplicateMobileError } from '../leadRepository';
 import { submitLeadForm } from '../leadForm';
@@ -78,7 +86,7 @@ describe.runIf(Boolean(host && authHost))('createFirestoreRepository (emulator)'
     await deleteApp(app).catch(() => undefined);
   });
 
-  it('creates a lead with an auto id and finds it by mobile', async () => {
+  it('creates a lead with an allocated L#### id and finds it by mobile', async () => {
     const repository = createFirestoreRepository(db);
     const before = (await repository.list()).length;
 
@@ -198,5 +206,77 @@ describe.runIf(Boolean(host && authHost))('createFirestoreRepository (emulator)'
       repository.updateLeadStatus('RULES001', 'Pending' as unknown as Lead['status']),
     ).rejects.toThrow(/Invalid lead status/);
     await expect(repository.updateLeadStatus('NO-SUCH-ID', 'Lost')).rejects.toThrow();
+  });
+
+  it('allocates sequential business-facing ids in the L#### format', async () => {
+    const repository = createFirestoreRepository(db);
+
+    await repository.create(buildLead({ phone: '9090000107', pincode: '502285', name: 'Seq One' }));
+    const first = await repository.findByMobile('9090000107');
+    expect(first?.lead_id).toMatch(/^L\d{4,}$/);
+
+    await repository.create(buildLead({ phone: '9090000108', pincode: '502285', name: 'Seq Two' }));
+    const second = await repository.findByMobile('9090000108');
+    expect(second?.lead_id).toMatch(/^L\d{4,}$/);
+
+    // strictly increasing by exactly one
+    const firstNumber = Number(first!.lead_id.slice(1));
+    const secondNumber = Number(second!.lead_id.slice(1));
+    expect(secondNumber).toBe(firstNumber + 1);
+
+    // the Firestore document id equals the business-facing lead_id
+    const direct = await getDoc(doc(db, 'leads', second!.lead_id));
+    expect(direct.exists()).toBe(true);
+    expect((direct.data() as { lead_id: string }).lead_id).toBe(second!.lead_id);
+  });
+
+  it('keeps concurrent creates unique and consecutive', async () => {
+    const repository = createFirestoreRepository(db);
+    const phones = ['9090000109', '9090000110', '9090000111'];
+
+    await Promise.all(
+      phones.map((phone, index) =>
+        repository.create(buildLead({ phone, pincode: '502285', name: `Concurrent ${index}` })),
+      ),
+    );
+
+    const leads = await Promise.all(phones.map((phone) => repository.findByMobile(phone)));
+    const ids = leads.map((lead) => lead!.lead_id);
+    expect(ids.every((id) => /^L\d{4,}$/.test(id))).toBe(true);
+    expect(new Set(ids).size).toBe(phones.length); // no duplicates
+
+    const numbers = ids.map((id) => Number(id.slice(1))).sort((a, b) => a - b);
+    expect(numbers[1]).toBe(numbers[0] + 1);
+    expect(numbers[2]).toBe(numbers[1] + 1);
+  });
+
+  it('never re-issues an id that already exists directly in the collection', async () => {
+    const repository = createFirestoreRepository(db);
+
+    // Simulate a directly-written lead (e.g. from the migration script)
+    // whose number is AT the candidate value: the next create must skip
+    // past it instead of colliding.
+    const existing = await repository.list();
+    const current = nextLeadNumberFromIds(existing.map((l) => l.lead_id));
+    const parkedId = `L${current}`; // the very id that would be considered next
+    await setDoc(doc(db, 'leads', parkedId), {
+      lead_id: parkedId,
+      name: 'Parked Legacy',
+      phone: '9090000198',
+      pincode: '502285',
+      dealer_id: 'D02',
+      dealer_name: 'Kandi Energy Point',
+      city: 'Sangareddy',
+      product: 'PuREPower Home 5kWh',
+      source: 'Website',
+      created_on: '2026-10-01',
+      status: 'New',
+      origin: 'migrated',
+    });
+
+    await repository.create(buildLead({ phone: '9090000112', pincode: '502285', name: 'Skipper' }));
+    const created = await repository.findByMobile('9090000112');
+    expect(created?.lead_id).not.toBe(parkedId); // collision avoided
+    expect(Number(created!.lead_id.slice(1))).toBeGreaterThan(current);
   });
 });

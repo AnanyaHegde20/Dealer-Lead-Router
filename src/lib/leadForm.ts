@@ -77,14 +77,6 @@ export function getDealerPreview(pincode: string): DealerAssignment | null {
   return assignDealer(pincode);
 }
 
-let idSequence = 0;
-
-/** Session-unique lead id (Cloud Firestore generates its own ids on write). */
-export function nextLeadId(): string {
-  idSequence += 1;
-  return `L${Date.now().toString(36).toUpperCase()}-${idSequence}`;
-}
-
 export type LeadFormSubmitResult =
   | { ok: true; lead: Lead }
   | { ok: false; errors: LeadFormErrors };
@@ -134,8 +126,11 @@ export async function submitLeadForm(
     };
   }
 
+  // The repository owns the business-facing id: it allocates the next
+  // free L#### number (continuing after existing leads) and returns the
+  // stored row, so the form never invents ids of its own.
   const lead: Lead = {
-    lead_id: nextLeadId(),
+    lead_id: '',
     name: values.name.trim(),
     phone,
     pincode: pincodeResult.value,
@@ -149,8 +144,9 @@ export async function submitLeadForm(
     origin: 'session',
   };
 
+  let saved: Lead;
   try {
-    await repository.create(lead);
+    saved = await repository.create(lead);
   } catch (error) {
     // Race-safe duplicate: another submit claimed this mobile between our
     // findByMobile check and the write. The repository enforces it at the
@@ -161,5 +157,8 @@ export async function submitLeadForm(
     }
     throw error;
   }
-  return { ok: true, lead };
+  if (!saved || !saved.lead_id) {
+    throw new Error('Repository failed to assign a unique lead ID');
+  }
+  return { ok: true, lead: saved };
 }
