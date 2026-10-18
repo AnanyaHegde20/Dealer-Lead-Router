@@ -14,13 +14,8 @@
  *   conditions. That is what lets us claim DB-enforced uniqueness for
  *   cloud mode (the security rules make the index append-only too).
  *
- * Lead ids: new leads receive a business-facing L#### id (L1011… or
- * continuing after migrated legacy ids like L1035). The candidate sequence
- * starts past existing ids in the collection, and the transaction reserves
- * doc(db, 'leads', leadId) under transaction isolation: concurrent creates
- * that propose the same id abort-and-retry, allocating consecutive unique
- * ids without needing an external counters collection. Document id ==
- * lead_id field (required by firestore.rules).
+ *   New leads receive a business-facing L#### id. Document id == lead_id
+ *   field (required by firestore.rules).
  */
 import {
   collection,
@@ -146,8 +141,6 @@ export function createFirestoreRepository(db: Firestore = getFirebaseDb()): Lead
     async create(lead: Lead): Promise<Lead> {
       const indexRef = doc(db, 'phoneIndex', lead.phone);
 
-      // Seed from existing leads: start after the highest business-facing L#### id
-      // currently present in the database (e.g. continuing after migrated L1001…L1035).
       const existing = await getDocs(collection(db, 'leads'));
       const seed = nextLeadNumberFromIds(existing.docs.map((entry) => entry.id));
 
@@ -162,13 +155,6 @@ export function createFirestoreRepository(db: Firestore = getFirebaseDb()): Lead
 
           let allocated = seed;
 
-          // Pick the first free L#### id inside the transaction.
-          // By reading doc(db, 'leads', leadId), Firestore transaction isolation
-          // guarantees that if two clients concurrently propose the same candidate ID,
-          // one commits and the other is automatically aborted and retried by Firestore,
-          // which then sees the newly created document and increments to the next ID.
-          // This provides race-safe sequential allocation using only the permitted
-          // leads and phoneIndex collections, preserving least-privilege security rules.
           let document: LeadDoc | null = null;
           let leadRef = doc(db, 'leads', formatLeadId(allocated));
           for (let attempt = 0; attempt < 100 && !document; attempt += 1) {

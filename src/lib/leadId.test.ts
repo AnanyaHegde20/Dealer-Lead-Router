@@ -1,7 +1,3 @@
-/**
- * Lead-id format helpers — pure functions, no emulator and no network.
- * Emulator behaviour (allocation, uniqueness) lives in src/lib/emulator/.
- */
 import { describe, expect, it } from 'vitest';
 import { formatLeadId, LEAD_ID_START, nextLeadNumberFromIds, parseLeadNumber } from './leadId';
 
@@ -32,7 +28,7 @@ describe('parseLeadNumber', () => {
     expect(parseLeadNumber('xox76PqfHPGD1QoAYMbW')).toBeNull();
     expect(parseLeadNumber('PRESET-LEAD-ID')).toBeNull();
     expect(parseLeadNumber('L')).toBeNull();
-    expect(parseLeadNumber('l1001')).toBeNull(); // lowercase is a different format
+    expect(parseLeadNumber('l1001')).toBeNull();
     expect(parseLeadNumber('')).toBeNull();
   });
 });

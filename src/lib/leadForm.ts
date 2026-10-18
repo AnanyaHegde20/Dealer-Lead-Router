@@ -126,9 +126,6 @@ export async function submitLeadForm(
     };
   }
 
-  // The repository owns the business-facing id: it allocates the next
-  // free L#### number (continuing after existing leads) and returns the
-  // stored row, so the form never invents ids of its own.
   const lead: Lead = {
     lead_id: '',
     name: values.name.trim(),

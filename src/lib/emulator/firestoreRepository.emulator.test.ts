@@ -219,12 +219,10 @@ describe.runIf(Boolean(host && authHost))('createFirestoreRepository (emulator)'
     const second = await repository.findByMobile('9090000108');
     expect(second?.lead_id).toMatch(/^L\d{4,}$/);
 
-    // strictly increasing by exactly one
     const firstNumber = Number(first!.lead_id.slice(1));
     const secondNumber = Number(second!.lead_id.slice(1));
     expect(secondNumber).toBe(firstNumber + 1);
 
-    // the Firestore document id equals the business-facing lead_id
     const direct = await getDoc(doc(db, 'leads', second!.lead_id));
     expect(direct.exists()).toBe(true);
     expect((direct.data() as { lead_id: string }).lead_id).toBe(second!.lead_id);
@@ -243,7 +241,7 @@ describe.runIf(Boolean(host && authHost))('createFirestoreRepository (emulator)'
     const leads = await Promise.all(phones.map((phone) => repository.findByMobile(phone)));
     const ids = leads.map((lead) => lead!.lead_id);
     expect(ids.every((id) => /^L\d{4,}$/.test(id))).toBe(true);
-    expect(new Set(ids).size).toBe(phones.length); // no duplicates
+    expect(new Set(ids).size).toBe(phones.length);
 
     const numbers = ids.map((id) => Number(id.slice(1))).sort((a, b) => a - b);
     expect(numbers[1]).toBe(numbers[0] + 1);
@@ -253,12 +251,9 @@ describe.runIf(Boolean(host && authHost))('createFirestoreRepository (emulator)'
   it('never re-issues an id that already exists directly in the collection', async () => {
     const repository = createFirestoreRepository(db);
 
-    // Simulate a directly-written lead (e.g. from the migration script)
-    // whose number is AT the candidate value: the next create must skip
-    // past it instead of colliding.
     const existing = await repository.list();
     const current = nextLeadNumberFromIds(existing.map((l) => l.lead_id));
-    const parkedId = `L${current}`; // the very id that would be considered next
+    const parkedId = `L${current}`;
     await setDoc(doc(db, 'leads', parkedId), {
       lead_id: parkedId,
       name: 'Parked Legacy',
@@ -276,7 +271,7 @@ describe.runIf(Boolean(host && authHost))('createFirestoreRepository (emulator)'
 
     await repository.create(buildLead({ phone: '9090000112', pincode: '502285', name: 'Skipper' }));
     const created = await repository.findByMobile('9090000112');
-    expect(created?.lead_id).not.toBe(parkedId); // collision avoided
+    expect(created?.lead_id).not.toBe(parkedId);
     expect(Number(created!.lead_id.slice(1))).toBeGreaterThan(current);
   });
 });

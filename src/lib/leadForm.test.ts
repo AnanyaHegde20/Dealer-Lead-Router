@@ -234,7 +234,6 @@ describe('repository swap', () => {
     expect(result.ok).toBe(true);
     expect(seen).toHaveLength(1);
     expect(seen[0]).toContain('9876543210');
-    // the form surfaces the id the repository actually stored
     if (result.ok) expect(result.lead.lead_id).toBe('L1011');
     resetLeadRepository();
   });
@@ -246,7 +245,7 @@ describe('repository swap', () => {
 });
 
 describe('submitLeadForm — ID format (business-facing L####)', () => {
-  it('produces sequential L1011, L1012, … ids across multiple creates', async () => {
+  it('produces sequential L1040, L1041, … ids across multiple creates', async () => {
     const repository = getLeadRepository();
     const first = await submitLeadForm(validLead, repository);
     const second = await submitLeadForm({ ...validLead, phone: '9876543211' }, repository);
@@ -255,11 +254,11 @@ describe('submitLeadForm — ID format (business-facing L####)', () => {
     expect(second.ok).toBe(true);
     expect(third.ok).toBe(true);
     if (!(first.ok && second.ok && third.ok)) return;
-    expect(first.lead.lead_id).toBe('L1011');
-    expect(second.lead.lead_id).toBe('L1012');
-    expect(third.lead.lead_id).toBe('L1013');
+    expect(first.lead.lead_id).toBe('L1040');
+    expect(second.lead.lead_id).toBe('L1041');
+    expect(third.lead.lead_id).toBe('L1042');
     const stored = await repository.list();
-    expect(stored.map((row) => row.lead_id)).toEqual(['L1011', 'L1012', 'L1013']);
+    expect(stored.map((row) => row.lead_id)).toEqual(['L1040', 'L1041', 'L1042']);
   });
 
   it('reuses the L#### format and never fabricates random string ids', async () => {

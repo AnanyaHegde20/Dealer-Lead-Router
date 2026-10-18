@@ -89,10 +89,6 @@ export function createLeadStore(session: LeadRepository): LeadRepository {
       );
     },
     async create(lead: Lead) {
-      // Local-mode id allocation: continue the L#### sequence past both
-      // the migrated CSV leads (L1001…L1035) and any session leads, so a
-      // new lead never reuses an existing business-facing id. The session
-      // repository keeps the id when it is free (its own rows only).
       const existing = await session.list();
       const taken = new Set<string>([
         ...MIGRATED_LEADS.map((row) => row.lead_id),

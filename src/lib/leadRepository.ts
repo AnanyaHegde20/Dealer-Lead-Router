@@ -14,12 +14,7 @@ export interface LeadRepository {
   list(): Promise<Lead[]>;
   /** Find a lead by its NORMALIZED 10-digit mobile (duplicate check). */
   findByMobile(phone: string): Promise<Lead | null>;
-  /**
-   * Persist a new lead and return the STORED row. The repository owns the
-   * business-facing L#### id: the incoming lead_id is treated as a
-   * provisional hint and replaced when it is empty or already taken, so
-   * every backend hands out unique ids.
-   */
+  /** Persist a new lead and return the stored row. */
   create(lead: Lead): Promise<Lead>;
   /** Change the status of an existing lead — the only editable field. */
   updateLeadStatus(id: string, status: LeadStatus): Promise<void>;
@@ -60,9 +55,6 @@ export function createMemoryLeadRepository(seed: Lead[] = []): LeadRepository {
       return rows.find((lead) => lead.phone === phone) ?? null;
     },
     async create(lead: Lead): Promise<Lead> {
-      // The caller's lead_id is provisional: keep it only when it is a
-      // valid L#### id that is still free, otherwise allocate the next
-      // free number so ids stay unique and in the business format.
       const taken = new Set(rows.map((row) => row.lead_id));
       const provisional = lead.lead_id;
       const reusable =
